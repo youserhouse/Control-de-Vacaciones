@@ -41,6 +41,7 @@
 
 <!-- ══ SIDEBAR ══════════════════════════════════════════════════ -->
 <aside class="app-sidebar" id="app-sidebar">
+  <div class="sidebar-top-accent"></div>
 
   <!-- Brand -->
   <div class="sidebar-brand">
@@ -136,14 +137,20 @@
       <span>Instalar app</span>
     </button>
 
-    <button class="nav-item nav-item-danger" id="logout-btn" onclick="logoutUser()" style="display:none;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
-        <polyline points="16 17 21 12 16 7"/>
-        <line x1="21" y1="12" x2="9" y2="12"/>
-      </svg>
-      <span>Cerrar sesión</span>
-    </button>
+    <div class="user-card" id="user-card" style="display:none;">
+      <div class="user-card-avatar" id="user-card-avatar">--</div>
+      <div class="user-card-info">
+        <div class="user-card-name" id="user-card-name">Usuario</div>
+        <div class="user-card-email" id="user-card-email"></div>
+      </div>
+      <button class="user-card-logout" onclick="logoutUser()" title="Cerrar sesión">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+    </div>
   </div>
 </aside>
 
@@ -179,7 +186,16 @@
         <p class="page-sub"  id="page-sub">Panel general de vacaciones</p>
       </div>
     </div>
-    <div class="header-actions">
+    <div class="header-actions" id="header-actions-dashboard">
+      <div class="header-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" placeholder="Buscar empleado..." oninput="onDashSearchInput(this.value)">
+      </div>
+      <button class="btn btn-green" onclick="openAddEmployee()">+ Empleado</button>
+      <button class="btn btn-ghost" onclick="openPdfModal()">⬇ Exportar</button>
+    </div>
+    <div class="header-actions" id="header-actions-other" style="display:none;">
+      <button class="btn btn-ghost" onclick="openImportModal()">⬆ Importar</button>
       <button class="btn btn-accent" onclick="openAddEmployee()">+ Empleado</button>
     </div>
   </div>
@@ -191,18 +207,33 @@
     <div class="view active" id="view-dashboard">
       <div class="stats-bar" id="stats-bar"></div>
 
-      <div class="festivos-panel">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div class="section-title">🎌 Festivos marcados este año</div>
-          <button class="btn btn-ghost" style="font-size:.78rem;padding:6px 14px;" onclick="openFestivosExcelModal()">📊 Importar Excel</button>
+      <div class="dash-grid">
+        <div class="panel-card">
+          <div class="panel-card-head">
+            <div>
+              <div class="panel-card-title">Equipo</div>
+              <div class="panel-card-sub" id="team-list-sub"></div>
+            </div>
+            <button class="btn" style="background:rgba(74,222,128,.13);color:#4ade80;" onclick="openAddEmployee()">+ Añadir</button>
+          </div>
+          <div class="team-list" id="team-list"></div>
         </div>
-        <div class="festivos-list" id="festivos-list"></div>
-      </div>
 
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-        <div class="section-title" style="margin-bottom:0;">Equipo</div>
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="panel-card">
+            <div class="panel-card-title" style="margin-bottom:12px;">Próximas vacaciones</div>
+            <div id="upcoming-list"></div>
+          </div>
+
+          <div class="panel-card">
+            <div class="panel-card-head">
+              <div class="panel-card-title">Festivos</div>
+              <button class="btn btn-ghost" style="padding:6px 12px;font-size:.76rem;" onclick="openFestivosExcelModal()">⬇ Importar</button>
+            </div>
+            <div id="festivos-list"></div>
+          </div>
+        </div>
       </div>
-      <div class="employees-grid" id="employees-grid"></div>
     </div>
 
     <!-- ANNUAL -->
@@ -213,11 +244,7 @@
           <h2 id="year-label">2026</h2>
           <button onclick="changeYear(1)">›</button>
         </div>
-        <div class="filter-pills" id="filter-pills"></div>
-        <div style="display:flex;gap:8px;">
-          <button class="btn btn-import" onclick="openImportModal()">⬆ Importar</button>
-          <button class="btn btn-pdf"    onclick="openPdfModal()">⬇ Exportar</button>
-        </div>
+        <div class="emp-filter-pill" id="annual-filter-select"></div>
       </div>
       <div class="legend" id="annual-legend"></div>
       <div id="annual-conflict-banner"></div>
@@ -226,9 +253,12 @@
 
     <!-- MONTHLY -->
     <div class="view" id="view-monthly">
-      <div class="month-selector">
-        <select id="month-select" onchange="renderMonthly()"></select>
-        <select id="year-select-monthly" onchange="renderMonthly()"></select>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+        <div class="month-selector">
+          <select id="month-select" onchange="renderMonthly()"></select>
+          <select id="year-select-monthly" onchange="renderMonthly()"></select>
+        </div>
+        <div class="emp-filter-pill" id="monthly-filter-select"></div>
       </div>
       <div class="legend" id="monthly-legend"></div>
       <div class="monthly-calendar" id="monthly-calendar"></div>
@@ -454,28 +484,44 @@
       <label>🎨 Tema de la aplicación</label>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px;">
         <div class="theme-card" id="tc-dark" onclick="setTheme('dark')">
-          <div style="background:#0c0e1b;padding:10px 10px 8px;display:flex;flex-direction:column;gap:4px;">
+          <div style="background:#0a0918;padding:10px 10px 8px;display:flex;flex-direction:column;gap:4px;">
             <div style="background:#1c2138;height:10px;border-radius:3px;"></div>
             <div style="background:#f5a623;height:6px;border-radius:2px;width:55%;"></div>
             <div style="background:#252d47;height:6px;border-radius:2px;width:80%;"></div>
           </div>
-          <div class="theme-card-label">🌙 Oscuro</div>
+          <div class="theme-card-label">🌙 Naranja</div>
+        </div>
+        <div class="theme-card" id="tc-forest" onclick="setTheme('forest')">
+          <div style="background:#0a0918;padding:10px 10px 8px;display:flex;flex-direction:column;gap:4px;">
+            <div style="background:#1c2138;height:10px;border-radius:3px;"></div>
+            <div style="background:#34d399;height:6px;border-radius:2px;width:55%;"></div>
+            <div style="background:#252d47;height:6px;border-radius:2px;width:80%;"></div>
+          </div>
+          <div class="theme-card-label">🌙 Esmeralda</div>
+        </div>
+        <div class="theme-card" id="tc-indigo" onclick="setTheme('indigo')">
+          <div style="background:#0a0918;padding:10px 10px 8px;display:flex;flex-direction:column;gap:4px;">
+            <div style="background:#1c2138;height:10px;border-radius:3px;"></div>
+            <div style="background:#818cf8;height:6px;border-radius:2px;width:55%;"></div>
+            <div style="background:#252d47;height:6px;border-radius:2px;width:80%;"></div>
+          </div>
+          <div class="theme-card-label">🌙 Índigo</div>
         </div>
         <div class="theme-card" id="tc-light" onclick="setTheme('light')">
-          <div style="background:#eef1f8;padding:10px 10px 8px;display:flex;flex-direction:column;gap:4px;">
-            <div style="background:#ffffff;height:10px;border-radius:3px;border:1px solid #dbe1ef;"></div>
-            <div style="background:#4f46e5;height:6px;border-radius:2px;width:55%;"></div>
-            <div style="background:#dbe1ef;height:6px;border-radius:2px;width:80%;"></div>
+          <div style="background:#f4f2ee;padding:10px 10px 8px;display:flex;flex-direction:column;gap:4px;">
+            <div style="background:#ffffff;height:10px;border-radius:3px;border:1px solid #e4e0d8;"></div>
+            <div style="background:#e0821f;height:6px;border-radius:2px;width:55%;"></div>
+            <div style="background:#e4e0d8;height:6px;border-radius:2px;width:80%;"></div>
           </div>
           <div class="theme-card-label">☀️ Claro</div>
         </div>
-        <div class="theme-card" id="tc-mecafilter" onclick="setTheme('mecafilter')">
-          <div style="background:#0D0B29;padding:10px 10px 8px;display:flex;flex-direction:column;gap:4px;">
-            <div style="background:#15133a;height:10px;border-radius:3px;"></div>
-            <div style="background:#509E48;height:6px;border-radius:2px;width:55%;"></div>
-            <div style="background:#2d2a5e;height:6px;border-radius:2px;width:80%;"></div>
+        <div class="theme-card" id="tc-light-forest" onclick="setTheme('lightForest')">
+          <div style="background:#f4f2ee;padding:10px 10px 8px;display:flex;flex-direction:column;gap:4px;">
+            <div style="background:#ffffff;height:10px;border-radius:3px;border:1px solid #e4e0d8;"></div>
+            <div style="background:#1f9d63;height:6px;border-radius:2px;width:55%;"></div>
+            <div style="background:#e4e0d8;height:6px;border-radius:2px;width:80%;"></div>
           </div>
-          <div class="theme-card-label">🟢 Mecafilter</div>
+          <div class="theme-card-label">☀️ Esmeralda</div>
         </div>
       </div>
     </div>

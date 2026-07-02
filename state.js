@@ -29,6 +29,9 @@ function loadState() {
       if (!p.compatibleRoles) p.compatibleRoles = [['Encargado','Piker']];
       p.employees.forEach(e => { if (!e.birthday) e.birthday = ''; });
       migrateFestivoEmployee(p);
+      if (p.theme === 'mecafilter') p.theme = 'forest';
+      delete p.activeFilters;
+      if (!p.filterEmpId) p.filterEmpId = '';
       return p;
     }
   } catch(e) {}
@@ -39,7 +42,7 @@ function loadState() {
     festivos: {},
     currentYear: 2026,
     selectedColor: COLORS[0],
-    activeFilters: ['all'],
+    filterEmpId: '',
     conflictThreshold: 2,
     conflictThresholdTotal: 99,
     customRoles: [],
@@ -167,6 +170,15 @@ function colorClasses(color) {
 }
 
 // ── THEME ─────────────────────────────────────────────────────
+const THEME_ORDER = ['dark', 'light', 'lightForest', 'forest', 'indigo'];
+const THEME_INFO = {
+  dark:        { name: 'Oscuro Naranja',   accent: '#f5a623', light: false, cls: 'theme-dark' },
+  light:       { name: 'Claro',            accent: '#e0821f', light: true,  cls: 'theme-light' },
+  lightForest: { name: 'Claro Esmeralda',  accent: '#1f9d63', light: true,  cls: 'theme-light-forest' },
+  forest:      { name: 'Esmeralda',        accent: '#34d399', light: false, cls: 'theme-forest' },
+  indigo:      { name: 'Índigo',           accent: '#818cf8', light: false, cls: 'theme-indigo' },
+};
+
 function setTheme(name) {
   state.theme = name;
   applyTheme();
@@ -174,32 +186,30 @@ function setTheme(name) {
 }
 
 function toggleTheme() {
-  const order = ['dark', 'light', 'mecafilter'];
   const cur = state.theme || 'dark';
-  setTheme(order[(order.indexOf(cur) + 1) % order.length]);
+  const idx = THEME_ORDER.indexOf(cur);
+  setTheme(THEME_ORDER[(idx + 1) % THEME_ORDER.length]);
 }
 
 function applyTheme() {
-  const t = state.theme || 'dark';
-  document.body.classList.remove('light', 'mecafilter');
-  if (t !== 'dark') document.body.classList.add(t);
+  const t = THEME_INFO[state.theme] ? state.theme : 'dark';
+  const info = THEME_INFO[t];
+
+  document.body.classList.remove(...Object.values(THEME_INFO).map(i => i.cls), 'base-light', 'base-dark');
+  document.body.classList.add(info.cls, info.light ? 'base-light' : 'base-dark');
 
   const btn = document.getElementById('theme-btn');
   if (btn) {
-    const labels = { dark: '☀️ Claro', light: '🟢 Meca', mecafilter: '🌙 Oscuro' };
     const span = btn.querySelector('span');
-    if (span) span.textContent = labels[t] || '☀️ Claro';
-    else btn.textContent = labels[t] || '☀️ Claro';
+    const label = 'Tema · ' + info.name;
+    if (span) span.textContent = label; else btn.textContent = label;
   }
 
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) {
-    const colors = { dark: '#f5a623', light: '#4f46e5', mecafilter: '#509E48' };
-    meta.content = colors[t] || '#f5a623';
-  }
+  if (meta) meta.content = info.accent;
 
-  ['dark', 'light', 'mecafilter'].forEach(n => {
-    const c = document.getElementById('tc-' + n);
+  THEME_ORDER.forEach(n => {
+    const c = document.getElementById('tc-' + THEME_INFO[n].cls.replace('theme-', ''));
     if (c) c.classList.toggle('active', n === t);
   });
 }
@@ -230,6 +240,11 @@ function showView(v) {
   const ps = document.getElementById('page-sub');
   if (pt) pt.textContent = m.title || '';
   if (ps) ps.textContent = m.sub || '';
+
+  const hDash = document.getElementById('header-actions-dashboard');
+  const hOther = document.getElementById('header-actions-other');
+  if (hDash)  hDash.style.display  = v === 'dashboard' ? 'flex' : 'none';
+  if (hOther) hOther.style.display = v === 'dashboard' ? 'none' : 'flex';
 
   closeSidebar();
 
