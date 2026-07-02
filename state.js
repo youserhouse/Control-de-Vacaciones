@@ -5,6 +5,7 @@ const COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#e91e8c','#00
 const DEFAULT_ROLES = ['Encargado','Piker'];
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DAYS_SHORT = ['L','M','X','J','V','S','D'];
+const WEEKDAYS_FULL = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 
 const DEFAULT_EMPLOYEES = [
   { id: 1, name: 'Ana',    role: 'Flotante', color: '#e74c3c', totalDays: 28 },

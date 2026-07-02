@@ -53,6 +53,7 @@ function openAddEmployee() {
   buildRoleSelect('Encargado');
   state.selectedColor=COLORS[state.employees.length % (COLORS.length-2)];
   document.getElementById('color-picker').innerHTML=buildColorPicker(state.selectedColor);
+  document.getElementById('emp-delete-btn').style.display='none';
   openModal('emp-modal');
 }
 
@@ -69,6 +70,7 @@ function openEditEmployee(id) {
   buildRoleSelect(emp.role||'Encargado');
   state.selectedColor=emp.color;
   document.getElementById('color-picker').innerHTML=buildColorPicker(emp.color);
+  document.getElementById('emp-delete-btn').style.display='flex';
   openModal('emp-modal');
 }
 
@@ -103,13 +105,19 @@ function saveEmployee() {
 }
 
 function deleteEmployee(id) {
-  if(!confirm('¿Eliminar este empleado? Se borrarán sus días marcados.')) return;
+  if(!confirm('¿Eliminar este empleado? Se borrarán sus días marcados.')) return false;
   state.employees=state.employees.filter(e=>e.id!==id);
   for(const key of Object.keys(state.marks)){
     delete state.marks[key][id];
     if(!Object.keys(state.marks[key]).length) delete state.marks[key];
   }
   saveState(); showToast('🗑 Empleado eliminado'); renderDashboard();
+  return true;
+}
+
+function deleteEmployeeFromModal() {
+  if (editingEmpId == null) return;
+  if (deleteEmployee(editingEmpId)) closeModal('emp-modal');
 }
 
 // ── SETTINGS MODAL ────────────────────────────────────────────

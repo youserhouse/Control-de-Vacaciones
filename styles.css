@@ -449,14 +449,6 @@ main { padding: 26px 28px; flex: 1; }
 .team-row:first-child { border-top: none; padding-top: 0; }
 .team-row:hover .team-name { color: var(--accent); }
 .team-head { display: flex; align-items: center; gap: 11px; margin-bottom: 10px; }
-.team-row-del {
-  background: none; border: none; cursor: pointer;
-  color: rgba(248,113,113,.45); padding: 4px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  transition: color .15s;
-}
-.team-row-del:hover { color: #f87171; }
-.team-row-del svg { width: 14px; height: 14px; stroke-width: 2; }
 .team-avatar {
   width: 36px; height: 36px; border-radius: 9px;
   display: flex; align-items: center; justify-content: center;
