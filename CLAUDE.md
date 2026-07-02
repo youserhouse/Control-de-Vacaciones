@@ -22,6 +22,9 @@ There is no build, lint, or test tooling in this repo — it's hand-written HTML
 ### Firebase config centralization
 `firebase-config.js` holds the single `firebaseConfig` object and is loaded as a global by `index.html`, `login.html`, and `splash.html` *before* any script that calls `firebase.initializeApp()`. Do not reintroduce inline copies of this config — keep it in one place. The Service Worker (`sw.js`) deliberately treats `firebase-config.js` as network-only (never cached) to avoid persisting the API key in a shared computer's cache.
 
+### Web fonts (Syne / DM Sans)
+Load Google Fonts via a direct `<link rel="preconnect">` + `<link rel="stylesheet">` pair in each HTML entrypoint's `<head>` (as `login.html`/`splash.html` already do) — do **not** rely solely on the `@import` at the top of `styles.css`. An `@import` inside an external stylesheet can only be discovered by the browser after it has fully downloaded and parsed `styles.css`, which delays the font fetch by a full extra round trip. On a slow/flaky mobile connection this increases the chance the page falls back to a system font while still applying `font-weight: 800` (used for the `Syne` display digits/headings) — most system fonts synthesize that weight as a heavily distorted, stretched-looking faux-bold. `index.html` was missing these direct `<link>` tags until this was diagnosed from a production screenshot on a mobile device; if you add a new HTML entrypoint, carry the same `<link>` pair over, and keep the `font-family` fallback stack (`-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif`) rather than a bare `sans-serif` so any fallback still renders at reasonable proportions.
+
 ### State model (`state.js`)
 A single global `state` object is the source of truth for the whole app, persisted to `localStorage` (`vac-app-v3`) and mirrored to Firestore. Shape:
 - `employees`: array of `{id, name, role, color, totalDays, birthday}`.
