@@ -130,7 +130,7 @@ function renderStatsBar() {
         <span class="stat-badge" style="background:rgba(129,140,248,.15);color:#818cf8;">${y}</span>
       </div>
       <div class="value">${festivosYear.length}</div>
-      <div class="label">Festivos marcados</div>
+      <div class="label">Festivos nacionales</div>
     </div>
     <div class="stat-card">
       <div class="stat-card-head">
@@ -177,9 +177,6 @@ function renderTeamList() {
           ? `<span class="status-pill status-pill-vac">De vacaciones</span>`
           : `<span class="status-pill status-pill-rest">${restantes} días restantes</span>`
         }
-        <button class="team-row-del" onclick="event.stopPropagation();deleteEmployee(${emp.id})" title="Eliminar empleado">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-        </button>
       </div>
       <div class="team-progress-track"><div class="team-progress-fill" style="width:${pct}%;background:${emp.color};"></div></div>
       <div class="team-caption">
@@ -227,6 +224,8 @@ function renderUpcomingPanel() {
 function renderFestivosPanel() {
   const y = state.currentYear;
   const festivosYear = Object.keys(state.festivos).filter(k=>k.startsWith(String(y))&&state.festivos[k]);
+  const yearLabel = document.getElementById('festivos-year-label');
+  if (yearLabel) yearLabel.textContent = y;
   const festList = document.getElementById('festivos-list');
   if (!festList) return;
   if (!festivosYear.length) {
@@ -236,13 +235,14 @@ function renderFestivosPanel() {
   festList.innerHTML = festivosYear.sort().map(key => {
     const p = key.split('-');
     const mon = MONTHS[parseInt(p[1])-1].slice(0,3);
+    const weekday = WEEKDAYS_FULL[keyToDate(key).getDay()];
     return `
     <div class="festivo-row">
       <div class="festivo-date-badge">
         <span class="fd-day">${parseInt(p[2])}</span>
         <span class="fd-mon">${mon}</span>
       </div>
-      <span class="festivo-label">Festivo ${p[0]}</span>
+      <span class="festivo-label">${weekday}</span>
       <button class="festivo-del" onclick="removeFestivo('${key}')" title="Eliminar">×</button>
     </div>`;
   }).join('');

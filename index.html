@@ -227,7 +227,7 @@
 
           <div class="panel-card">
             <div class="panel-card-head">
-              <div class="panel-card-title">Festivos</div>
+              <div class="panel-card-title">Festivos <span id="festivos-year-label" style="color:var(--muted);font-weight:600;"></span></div>
               <button class="btn btn-ghost" style="padding:6px 12px;font-size:.76rem;" onclick="openFestivosExcelModal()">⬇ Importar</button>
             </div>
             <div id="festivos-list"></div>
@@ -451,6 +451,7 @@
       <div class="color-picker-row" id="color-picker"></div>
     </div>
     <div class="modal-actions">
+      <button class="btn" id="emp-delete-btn" style="background:rgba(248,113,113,.1);color:#f87171;border:1px solid rgba(248,113,113,.25);margin-right:auto;display:none;" onclick="deleteEmployeeFromModal()">🗑 Eliminar</button>
       <button class="btn btn-ghost" onclick="closeModal('emp-modal')">Cancelar</button>
       <button class="btn btn-accent" onclick="saveEmployee()">Guardar</button>
     </div>
