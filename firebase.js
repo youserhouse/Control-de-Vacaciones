@@ -45,8 +45,20 @@ function logoutUser() { auth.signOut(); }
 auth.onAuthStateChanged(user => {
   if (user) {
     window.currentUser = user;
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) logoutBtn.style.display = '';
+    const email = user.email || '';
+    const namePart = email.split('@')[0] || 'Usuario';
+    const displayName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+    const initials = namePart.slice(0, 2).toUpperCase();
+
+    const card = document.getElementById('user-card');
+    const avatar = document.getElementById('user-card-avatar');
+    const nameEl = document.getElementById('user-card-name');
+    const emailEl = document.getElementById('user-card-email');
+    if (card) card.style.display = 'flex';
+    if (avatar) avatar.textContent = initials;
+    if (nameEl) nameEl.textContent = displayName;
+    if (emailEl) emailEl.textContent = email;
+
     startSync();
   } else {
     location.replace('login.html');
@@ -64,7 +76,7 @@ window.saveToFirebase = async function() {
     const s = window.state;
     const data = JSON.parse(JSON.stringify(s));
     delete data.selectedColor;
-    delete data.activeFilters;
+    delete data.filterEmpId;
     if (Array.isArray(data.compatibleRoles)) {
       data.compatibleRoles = JSON.stringify(data.compatibleRoles);
     }

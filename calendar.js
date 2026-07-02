@@ -55,119 +55,204 @@ function renderConflictBanner(containerId, year) {
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────
+let _dashSearchQuery = '';
+
+function keyToDate(key) {
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function getNextVacationBlock(empId) {
+  const todayStr = todayKey();
+  const keys = Object.keys(state.marks)
+    .filter(k => state.marks[k][empId] === 'V' && k >= todayStr)
+    .sort();
+  if (!keys.length) return null;
+  let start = keys[0], end = keys[0];
+  let cursor = keyToDate(start);
+  for (let i = 1; i < keys.length; i++) {
+    cursor.setDate(cursor.getDate() + 1);
+    if (keys[i] === dateKey(cursor.getFullYear(), cursor.getMonth(), cursor.getDate())) {
+      end = keys[i];
+    } else break;
+  }
+  return { start, end };
+}
+
+function formatRangeLabel(startKey, endKey) {
+  const s = keyToDate(startKey);
+  const sLabel = `${pad(s.getDate())} ${MONTHS[s.getMonth()].slice(0,3)}`;
+  if (startKey === endKey) return sLabel;
+  const e = keyToDate(endKey);
+  return `${sLabel} – ${pad(e.getDate())} ${MONTHS[e.getMonth()].slice(0,3)}`;
+}
+
 function renderDashboard() {
+  renderStatsBar();
+  renderTeamList();
+  renderUpcomingPanel();
+  renderFestivosPanel();
+}
+
+function renderStatsBar() {
   const y = state.currentYear;
   const emps = state.employees;
   const festivosYear = Object.keys(state.festivos).filter(k=>k.startsWith(String(y))&&state.festivos[k]);
-  const totalVac = emps.reduce((a,e)=>a+countVacDays(e.id,y),0);
-  const totalLeft = emps.reduce((a,e)=>a+(e.totalDays-countVacDays(e.id,y)),0);
-
-  const today = new Date();
-  const empsWithBd = emps.filter(e=>e.birthday).map(e=>{
-    const b = new Date(e.birthday);
-    let next = new Date(y, b.getMonth(), b.getDate());
-    if (next < today) next = new Date(y+1, b.getMonth(), b.getDate());
-    const diff = Math.ceil((next-today)/(1000*60*60*24));
-    return {...e, nextBd: next, daysUntil: diff};
-  }).sort((a,b)=>a.daysUntil-b.daysUntil);
-  const nextBd = empsWithBd[0];
+  const vacHoy = emps.filter(e => getDayMarks(todayKey())[e.id] === 'V').length;
+  const avgUsed = emps.length ? Math.round(emps.reduce((a,e)=>a+countVacDays(e.id,y),0) / emps.length) : 0;
 
   document.getElementById('stats-bar').innerHTML = `
     <div class="stat-card">
-      <div class="label">Año</div>
-      <div class="value" style="color:var(--accent)">${y}</div>
-      <div class="sub">en curso</div>
-    </div>
-    <div class="stat-card">
-      <div class="label">Empleados</div>
+      <div class="stat-card-head">
+        <div class="stat-icon" style="background:rgba(74,222,128,.15);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        </div>
+        <span class="stat-badge" style="background:rgba(74,222,128,.15);color:#4ade80;">Activos</span>
+      </div>
       <div class="value">${emps.length}</div>
-      <div class="sub">registrados</div>
+      <div class="label">Empleados</div>
     </div>
     <div class="stat-card">
-      <div class="label">Días usados</div>
-      <div class="value">${totalVac}</div>
-      <div class="sub">vacaciones asignadas</div>
+      <div class="stat-card-head">
+        <div class="stat-icon" style="background:var(--accent-dim);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+        </div>
+        <span class="stat-badge" style="background:var(--accent-dim);color:var(--accent);">Hoy</span>
+      </div>
+      <div class="value">${vacHoy}</div>
+      <div class="label">De vacaciones hoy</div>
     </div>
     <div class="stat-card">
-      <div class="label">Días restantes</div>
-      <div class="value">${totalLeft}</div>
-      <div class="sub">entre todos</div>
-    </div>
-    <div class="stat-card festivo-card">
-      <div class="label">Festivos</div>
+      <div class="stat-card-head">
+        <div class="stat-icon" style="background:rgba(129,140,248,.15);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        </div>
+        <span class="stat-badge" style="background:rgba(129,140,248,.15);color:#818cf8;">${y}</span>
+      </div>
       <div class="value">${festivosYear.length}</div>
-      <div class="sub">marcados este año</div>
+      <div class="label">Festivos marcados</div>
     </div>
-    ${nextBd ? `<div class="stat-card" style="border-color:rgba(255,182,193,.4);">
-      <div class="label">🎂 Próximo cumple</div>
-      <div class="value" style="font-size:1.2rem;color:#ffb6c1;">${nextBd.name}</div>
-      <div class="sub">${nextBd.daysUntil===0?'¡Hoy! 🎉':nextBd.daysUntil===1?'Mañana':nextBd.daysUntil+' días'} · ${nextBd.nextBd.getDate()} ${MONTHS[nextBd.nextBd.getMonth()].slice(0,3)}</div>
-    </div>` : ''}
+    <div class="stat-card">
+      <div class="stat-card-head">
+        <div class="stat-icon" style="background:rgba(192,132,252,.15);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>
+        </div>
+        <span class="stat-badge" style="background:rgba(192,132,252,.15);color:#c084fc;">Media</span>
+      </div>
+      <div class="value">${avgUsed}<span class="value-suffix">d</span></div>
+      <div class="label">Días vacaciones usados</div>
+    </div>
   `;
+}
 
-  const festList = document.getElementById('festivos-list');
-  if (!festivosYear.length) {
-    festList.innerHTML = '<span class="no-festivos">Sin festivos marcados. Ábrelos desde el calendario.</span>';
-  } else {
-    festList.innerHTML = festivosYear.sort().map(key => {
-      const p=key.split('-');
-      const label=`${parseInt(p[2])} ${MONTHS[parseInt(p[1])-1].slice(0,3)} ${p[0]}`;
-      return `<div class="festivo-chip">🎌 ${label}<button onclick="removeFestivo('${key}')" title="Eliminar">×</button></div>`;
-    }).join('');
+function renderTeamList() {
+  const y = state.currentYear;
+  const q = _dashSearchQuery.trim().toLowerCase();
+  const emps = state.employees.filter(e => !q || e.name.toLowerCase().includes(q));
+  const container = document.getElementById('team-list');
+  if (!container) return;
+  const sub = document.getElementById('team-list-sub');
+  if (sub) sub.textContent = `${state.employees.length} empleados · año ${y}`;
+
+  if (!emps.length) {
+    container.innerHTML = '<div class="team-empty">Sin empleados que coincidan con la búsqueda.</div>';
+    return;
   }
 
-  document.getElementById('employees-grid').innerHTML = emps.map(emp => {
+  container.innerHTML = emps.map(emp => {
     const used = countVacDays(emp.id, y);
-    const past = countPastVacDays(emp.id, y);
-    const future = countFutureVacDays(emp.id, y);
-    const notScheduled = emp.totalDays - used;
+    const restantes = emp.totalDays - used;
     const pct = Math.min(100, Math.round((used/emp.totalDays)*100));
-    const pastPct = Math.min(100, Math.round((past/emp.totalDays)*100));
-    const futurePct = Math.min(100, Math.round((future/emp.totalDays)*100));
+    const onVacation = getDayMarks(todayKey())[emp.id] === 'V';
     const textColor = getTextColorForBg(emp.color);
-    const isCurrentYear = y === new Date().getFullYear();
     return `
-    <div class="emp-card" style="border-left:4px solid ${emp.color}">
-      <div class="emp-header">
-        <div class="emp-dot" style="background:${emp.color};color:${textColor}">${initials(emp.name)}</div>
-        <div><div class="emp-name">${emp.name}</div><div class="emp-role">${emp.role||'—'}${emp.birthday?` · 🎂 ${new Date(emp.birthday).getDate()} ${MONTHS[new Date(emp.birthday).getMonth()].slice(0,3)}`:''}
-        </div></div>
-      </div>
-      <div class="progress-wrap">
-        <div class="progress-label"><span>Vacaciones planificadas</span><span>${pct}%</span></div>
-        <div class="progress-bar" style="height:8px;">
-          <div class="progress-fill" style="width:${pastPct}%;background:${emp.color};opacity:0.5;border-radius:99px 0 0 99px;"></div>
-          <div class="progress-fill" style="width:${futurePct}%;background:${emp.color};border-radius:${pastPct===0?'99px':'0'} 99px 99px ${pastPct===0?'99px':'0'};margin-top:-8px;margin-left:${pastPct}%;"></div>
+    <div class="team-row" onclick="openEditEmployee(${emp.id})">
+      <div class="team-head">
+        <div class="team-avatar" style="background:${emp.color};color:${textColor}">${initials(emp.name)}</div>
+        <div class="team-name-wrap">
+          <span class="team-name">${emp.name}</span>
+          <span class="team-role">${emp.role||'—'}</span>
         </div>
-        <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:0.7rem;color:var(--muted);">
-          <span>🕐 Disfrutados: <strong style="color:var(--text)">${past}</strong></span>
-          <span>📅 Pendientes: <strong style="color:${emp.color}">${future}</strong></span>
-        </div>
-      </div>
-      <div class="days-taken" style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border);">
-        ${isCurrentYear
-          ? `<strong style="color:${emp.color};font-size:1rem;">${notScheduled}</strong> días sin asignar de <strong>${emp.totalDays}</strong>`
-          : `<strong>${used}</strong> de <strong>${emp.totalDays}</strong> días · <strong style="color:${emp.color}">${emp.totalDays-used}</strong> restantes`
+        ${onVacation
+          ? `<span class="status-pill status-pill-vac">De vacaciones</span>`
+          : `<span class="status-pill status-pill-rest">${restantes} días restantes</span>`
         }
+        <button class="team-row-del" onclick="event.stopPropagation();deleteEmployee(${emp.id})" title="Eliminar empleado">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>
       </div>
-      <div class="emp-card-actions">
-        <button class="btn-edit" onclick="openEditEmployee(${emp.id})">✏️ Editar empleado</button>
-        <button class="btn-delete" onclick="deleteEmployee(${emp.id})" title="Eliminar">🗑</button>
+      <div class="team-progress-track"><div class="team-progress-fill" style="width:${pct}%;background:${emp.color};"></div></div>
+      <div class="team-caption">
+        <span>${used} de ${emp.totalDays} días usados</span>
+        <span class="pct">${pct}%</span>
       </div>
     </div>`;
-  }).join('') + `
-  <div class="emp-card" style="border:2px dashed var(--border);background:transparent;display:flex;align-items:center;justify-content:center;min-height:130px;cursor:pointer;" onclick="openAddEmployee()">
-    <div style="text-align:center;color:var(--muted)">
-      <div style="font-size:1.8rem;margin-bottom:5px">+</div>
-      <div style="font-size:0.83rem">Añadir empleado</div>
-    </div>
-  </div>`;
+  }).join('');
+}
+
+function onDashSearchInput(val) {
+  _dashSearchQuery = val;
+  renderTeamList();
+}
+
+function renderUpcomingPanel() {
+  const container = document.getElementById('upcoming-list');
+  if (!container) return;
+  const rows = state.employees
+    .map(emp => {
+      const block = getNextVacationBlock(emp.id);
+      return block ? { emp, block } : null;
+    })
+    .filter(Boolean)
+    .sort((a,b) => a.block.start.localeCompare(b.block.start));
+
+  if (!rows.length) {
+    container.innerHTML = '<div class="team-empty">Sin vacaciones próximas.</div>';
+    return;
+  }
+  container.innerHTML = rows.map(({emp, block}) => {
+    const textColor = getTextColorForBg(emp.color);
+    return `
+    <div class="upcoming-row">
+      <div class="team-avatar" style="width:36px;height:36px;background:${emp.color};color:${textColor}">${initials(emp.name)}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="upcoming-name">${emp.name}</div>
+        <div class="upcoming-range">${formatRangeLabel(block.start, block.end)}</div>
+      </div>
+      <div class="upcoming-dot" style="background:${emp.color};"></div>
+    </div>`;
+  }).join('');
+}
+
+function renderFestivosPanel() {
+  const y = state.currentYear;
+  const festivosYear = Object.keys(state.festivos).filter(k=>k.startsWith(String(y))&&state.festivos[k]);
+  const festList = document.getElementById('festivos-list');
+  if (!festList) return;
+  if (!festivosYear.length) {
+    festList.innerHTML = '<span class="no-festivos">Sin festivos marcados. Impórtalos o añádelos desde el calendario.</span>';
+    return;
+  }
+  festList.innerHTML = festivosYear.sort().map(key => {
+    const p = key.split('-');
+    const mon = MONTHS[parseInt(p[1])-1].slice(0,3);
+    return `
+    <div class="festivo-row">
+      <div class="festivo-date-badge">
+        <span class="fd-day">${parseInt(p[2])}</span>
+        <span class="fd-mon">${mon}</span>
+      </div>
+      <span class="festivo-label">Festivo ${p[0]}</span>
+      <button class="festivo-del" onclick="removeFestivo('${key}')" title="Eliminar">×</button>
+    </div>`;
+  }).join('');
 }
 
 function removeFestivo(key) {
   delete state.festivos[key];
   saveState();
-  renderDashboard();
+  renderFestivosPanel();
+  renderStatsBar();
   showToast('🗑 Festivo eliminado');
 }
 
@@ -175,7 +260,7 @@ function removeFestivo(key) {
 function renderAnnual() {
   const y = state.currentYear;
   document.getElementById('year-label').textContent = y;
-  renderFilterPills();
+  renderEmpFilterSelect('annual-filter-select');
   renderLegend('annual-legend');
   renderConflictBanner('annual-conflict-banner', y);
   const conflictKeys = new Set(getConflictDays(y).map(c=>c.key));
@@ -195,16 +280,15 @@ function renderAnnual() {
       const marks=getDayMarks(key);
       const festivo=isFestivo(key);
       const isConflict = conflictKeys.has(key);
-      const showFestivo = festivo && (state.activeFilters.includes('all')||state.activeFilters.includes('festivo'));
       const markedEmps=Object.keys(marks).map(Number).filter(id=>{
-        if(state.activeFilters.includes('all')) return true;
-        return state.activeFilters.includes(id);
+        if(!state.filterEmpId) return true;
+        return String(id)===String(state.filterEmpId);
       });
       const weekend=isWeekend(y,m,d), isToday=key===todayKey();
       let bg='transparent', cls='day-cell';
       if(weekend) cls+=' weekend';
       if(isToday) cls+=' today';
-      if(showFestivo) cls+=' is-festivo';
+      if(festivo) cls+=' is-festivo';
       if(isConflict) cls+=' conflict';
       let dotsHtml='';
       if(markedEmps.length===1){
@@ -217,7 +301,7 @@ function renderAnnual() {
           return emp?`<div class="day-dot" style="background:${emp.color}"></div>`:'';
         }).join('')}</div>`;
       }
-      const fCorner=showFestivo?`<div class="festivo-corner"></div>`:'';
+      const fCorner=festivo?`<div class="festivo-corner"></div>`:'';
       const conflictIcon=isConflict?`<div class="conflict-icon-annual">⚠️</div>`:'';
       const birthdays=getBirthdaysOnKey(key);
       const bdCorner=birthdays.length?`<div class="birthday-corner">🎂</div>`:'';
@@ -230,32 +314,25 @@ function renderAnnual() {
   }
 }
 
-function renderFilterPills() {
-  const af=state.activeFilters;
-  let html=`<div class="pill pill-all ${af.includes('all')?'active':''}" onclick="toggleFilter('all')">Todos</div>`;
-  html+=`<div class="pill pill-festivo ${af.includes('festivo')?'active':''}" onclick="toggleFilter('festivo')">🎌 Festivos</div>`;
-  state.employees.forEach(e=>{
-    const isWhite = e.color==='#ffffff';
-    const isBlack = e.color==='#000000';
-    let pillStyle, textStyle;
-    if (isWhite) { pillStyle=`background:#f0f0f0;border:2px solid #999;`; textStyle=`color:#333;`; }
-    else if (isBlack) { pillStyle=`background:#222;border:2px solid #888;`; textStyle=`color:#fff;`; }
-    else { pillStyle=`background:${e.color}20;border-color:${e.color}40;`; textStyle=`color:${e.color};`; }
-    html+=`<div class="pill ${af.includes(e.id)?'active':''}" style="${pillStyle}${textStyle}" onclick="toggleFilter(${e.id})">${e.name}</div>`;
-  });
-  document.getElementById('filter-pills').innerHTML=html;
+// ── EMPLOYEE FILTER (Anual + Mensual) ──────────────────────────
+function renderEmpFilterSelect(containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+    <select onchange="onFilterEmpChange(this.value)">
+      <option value="">Empleados</option>
+      ${state.employees.map(e => `<option value="${e.id}" ${String(state.filterEmpId)===String(e.id)?'selected':''}>${e.name}</option>`).join('')}
+    </select>
+    <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+  `;
 }
 
-function toggleFilter(id) {
-  if(id==='all'){ state.activeFilters=['all']; }
-  else {
-    state.activeFilters=state.activeFilters.filter(x=>x!=='all');
-    if(state.activeFilters.includes(id)) {
-      state.activeFilters=state.activeFilters.filter(x=>x!==id);
-      if(!state.activeFilters.length) state.activeFilters=['all'];
-    } else { state.activeFilters.push(id); }
-  }
-  renderAnnual();
+function onFilterEmpChange(val) {
+  state.filterEmpId = val;
+  const activeView = document.querySelector('.view.active');
+  const v = activeView ? activeView.id.replace('view-','') : 'annual';
+  if (v === 'monthly') renderMonthly(); else renderAnnual();
 }
 
 function changeYear(delta) {
@@ -274,6 +351,7 @@ function initMonthlySelects() {
 
 function renderMonthly() {
   initMonthlySelects();
+  renderEmpFilterSelect('monthly-filter-select');
   renderLegend('monthly-legend');
   const m=parseInt(document.getElementById('month-select').value);
   const y=parseInt(document.getElementById('year-select-monthly').value);
@@ -296,13 +374,15 @@ function renderMonthly() {
     const conflictHtml=isConflict?`<div class="conflict-label-monthly">⚠️ Conflicto de turno</div>`:'';
     const birthdays=getBirthdaysOnKey(key);
     const bdHtml=birthdays.map(e=>`<span class="monthly-birthday-badge">🎂 Cumple ${e.name}</span>`).join('');
-    const badges=Object.entries(marks).map(([id,type])=>{
-      const emp=state.employees.find(e=>e.id===Number(id));
-      if(!emp) return '';
-      const textColor = getTextColorForBg(emp.color);
-      const border = emp.color==='#ffffff' ? 'border:1.5px solid #777;' : emp.color==='#000000' ? 'border:1.5px solid #aaa;' : '';
-      return `<span class="emp-badge" style="background:${emp.color};color:${textColor};${border}">${emp.name}${type==='O'?' ✱':''}</span>`;
-    }).join('');
+    const badges=Object.entries(marks)
+      .filter(([id])=> !state.filterEmpId || String(id)===String(state.filterEmpId))
+      .map(([id,type])=>{
+        const emp=state.employees.find(e=>e.id===Number(id));
+        if(!emp) return '';
+        const textColor = getTextColorForBg(emp.color);
+        const border = emp.color==='#ffffff' ? 'border:1.5px solid #777;' : emp.color==='#000000' ? 'border:1.5px solid #aaa;' : '';
+        return `<span class="emp-badge" style="background:${emp.color};color:${textColor};${border}">${emp.name}${type==='O'?' ✱':''}</span>`;
+      }).join('');
     html+=`<div class="${cls}" onclick="openDayModal('${key}')">
       <div class="day-num">${d}</div>${festivoHtml}${conflictHtml}${bdHtml}
       <div class="day-emp-badges">${badges}</div>
