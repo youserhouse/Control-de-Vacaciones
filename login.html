@@ -6,8 +6,8 @@
   default-src 'self';
   script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdnjs.cloudflare.com;
   worker-src 'self' blob: https://cdnjs.cloudflare.com;
-  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-  font-src https://fonts.gstatic.com;
+  style-src 'self' 'unsafe-inline';
+  font-src 'self';
   connect-src 'self' https://*.googleapis.com https://*.firebaseio.com
     https://identitytoolkit.googleapis.com https://securetoken.googleapis.com
     https://firestore.googleapis.com;
@@ -26,13 +26,42 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Fuentes autoalojadas en /fonts (ver CLAUDE.md) -->
+<link rel="preload" href="fonts/dm-sans.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/syne.woff2" as="font" type="font/woff2" crossorigin>
 
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('fonts/dm-sans.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('fonts/dm-sans.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('fonts/syne.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('fonts/syne.woff2') format('woff2');
+}
 html, body {
-  height: 100%; font-family: 'DM Sans', sans-serif;
+  height: 100%; font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
   background: #0D0B29; color: #F2F3F5;
   display: flex; align-items: center; justify-content: center;
 }
@@ -52,14 +81,14 @@ html, body {
 .field label { display: block; font-size: 0.75rem; color: #9097A1; margin-bottom: 6px; font-weight: 600; letter-spacing: .3px; }
 .field input {
   width: 100%; background: #0D0B29; border: 1px solid #2d2a5e; color: #F2F3F5;
-  padding: 12px 14px; border-radius: 9px; font-family: 'DM Sans', sans-serif;
+  padding: 12px 14px; border-radius: 9px; font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
   font-size: 0.9rem; outline: none; transition: border-color .2s;
 }
 .field input:focus { border-color: #509E48; }
 
 .btn-email {
   width: 100%; background: #509E48; color: #fff; border: none;
-  border-radius: 10px; padding: 13px; font-family: 'Syne', sans-serif;
+  border-radius: 10px; padding: 13px; font-family: 'Syne', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
   font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: filter .2s; margin-top: 4px;
 }
 .btn-email:hover { filter: brightness(1.1); }
