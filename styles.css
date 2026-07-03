@@ -342,7 +342,7 @@ body {
 .page-title {
   font-family: 'Syne', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
   font-size: 1.15rem;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text);
   line-height: 1.2;
 }
@@ -470,7 +470,8 @@ main { padding: 26px 28px; flex: 1; }
 .stat-card .value {
   font-family: 'Syne', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
   font-size: 1.8rem;
-  font-weight: 800;
+  font-weight: 700;
+  letter-spacing: -1px;
   line-height: 1;
   color: var(--text);
 }
@@ -598,7 +599,7 @@ main { padding: 26px 28px; flex: 1; }
 
 /* ── YEAR NAV ───────────────────────────────────────────────── */
 .year-nav { display: flex; align-items: center; gap: 14px; }
-.year-nav h2 { font-family: 'Syne', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 1.45rem; font-weight: 800; }
+.year-nav h2 { font-family: 'Syne', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 1.45rem; font-weight: 700; letter-spacing: -0.5px; }
 .year-nav button {
   background: var(--surface2);
   border: 1px solid var(--border);
@@ -822,7 +823,7 @@ body.base-light .monthly-day.empty { background: rgba(0,0,0,.025); }
 }
 .overlay.open .modal { transform: translateY(0); }
 .modal h3 {
-  font-family: 'Syne', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 1.1rem; font-weight: 800;
+  font-family: 'Syne', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 1.1rem; font-weight: 700;
   margin-bottom: 20px;
 }
 
@@ -1040,7 +1041,7 @@ body.base-light .monthly-day.empty { background: rgba(0,0,0,.025); }
 .gantt-month-nav button:hover { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
 .gantt-month-nav h3 {
   font-family: 'Syne', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-  font-size: 1rem; font-weight: 800;
+  font-size: 1rem; font-weight: 700;
   min-width: 150px; text-align: center;
 }
 
