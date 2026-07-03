@@ -1,4 +1,69 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
+/* ── WEB FONTS (autoalojadas, ver CLAUDE.md) ──────────────────
+   Syne y DM Sans se sirven desde /fonts en vez de Google Fonts:
+   evita depender de que fonts.googleapis.com/fonts.gstatic.com
+   sean alcanzables desde la red del cliente (esto causó el bug de
+   texto "ensanchado" en dispositivos donde esos dominios estaban
+   bloqueados — ver commit de esta sección). Ambos .woff2 son fuentes
+   variables, pero se declaran con un peso fijo por regla (nunca un
+   rango tipo "400 800") — la interpolación de rango en estos dos
+   archivos concretos deforma los glifos (probado: el "0" sale ovalado
+   a peso 800). Un @font-face por peso, como sirve Google Fonts. */
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('fonts/dm-sans.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('fonts/dm-sans.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('fonts/dm-sans.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('fonts/dm-sans.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('fonts/syne.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('fonts/syne.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('fonts/syne.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('fonts/syne.woff2') format('woff2');
+}
 
 /* ── DESIGN TOKENS ─────────────────────────────────────────── */
 /* 5 temas: theme-dark (Oscuro Naranja, por defecto), theme-light (Claro),
