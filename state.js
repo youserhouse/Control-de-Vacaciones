@@ -164,6 +164,17 @@ function getTextColorForBg(hex) {
   return lum > 0.45 ? '#000' : '#fff';
 }
 
+// Avatar de iniciales: fondo del color del empleado muy tenue (16% alfa)
+// y texto en el color sólido — más integrado que un cuadrado sólido.
+function avatarTintStyle(color) {
+  const isWhite = color === '#ffffff';
+  const isBlack = color === '#000000';
+  let border = '';
+  if (isWhite) border = 'border:1px solid rgba(255,255,255,.35);';
+  if (isBlack) border = 'border:1px solid rgba(255,255,255,.18);';
+  return `background:${color}28;color:${color};${border}`;
+}
+
 function colorClasses(color) {
   if (color === '#ffffff') return 'marked color-white bg-white';
   if (color === '#000000') return 'marked color-black bg-black';

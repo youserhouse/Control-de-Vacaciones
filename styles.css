@@ -532,7 +532,7 @@ main { padding: 26px 28px; flex: 1; }
 .team-avatar {
   width: 36px; height: 36px; border-radius: 9px;
   display: flex; align-items: center; justify-content: center;
-  font-family: 'Syne', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 0.75rem; font-weight: 800;
+  font-family: 'Syne', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 0.75rem; font-weight: 700;
   flex-shrink: 0;
 }
 .team-name-wrap {
@@ -598,7 +598,7 @@ main { padding: 26px 28px; flex: 1; }
   font-size: 0.48rem; font-weight: 700; color: var(--muted);
   text-transform: uppercase; letter-spacing: .4px;
 }
-.festivo-row .festivo-label { font-size: 0.8rem; color: var(--text); flex: 1; }
+.festivo-row .festivo-name { font-size: 0.8rem; color: var(--text); flex: 1; }
 .festivo-row .festivo-del {
   background: none; border: none; color: var(--festivo); cursor: pointer;
   font-size: 0.95rem; line-height: 1; padding: 2px; opacity: .5; flex-shrink: 0;
