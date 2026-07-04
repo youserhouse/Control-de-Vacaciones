@@ -404,7 +404,6 @@ function initMonthlySelects() {
 function renderMonthly() {
   initMonthlySelects();
   renderEmpFilterSelect('monthly-filter-select');
-  renderLegend('monthly-legend');
   const m=parseInt(document.getElementById('month-select').value);
   const y=parseInt(document.getElementById('year-select-monthly').value);
   const conflictKeys = new Set(getConflictDays(y).map(c=>c.key));
@@ -431,9 +430,7 @@ function renderMonthly() {
       .map(([id,type])=>{
         const emp=state.employees.find(e=>e.id===Number(id));
         if(!emp) return '';
-        const textColor = getTextColorForBg(emp.color);
-        const border = emp.color==='#ffffff' ? 'border:1.5px solid #777;' : emp.color==='#000000' ? 'border:1.5px solid #aaa;' : '';
-        return `<span class="emp-badge" style="background:${emp.color};color:${textColor};${border}">${emp.name}${type==='O'?' ✱':''}</span>`;
+        return `<span class="emp-badge" style="${avatarTintStyle(emp.color)}">${emp.name}${type==='O'?' ✱':''}</span>`;
       }).join('');
     html+=`<div class="${cls}" onclick="openDayModal('${key}')">
       <div class="day-num">${d}</div>${festivoHtml}${conflictHtml}${bdHtml}
