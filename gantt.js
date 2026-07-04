@@ -88,7 +88,7 @@ function renderGantt() {
       rowsHtml += `
       <div class="gantt-row">
         <div class="g-emp-col">
-          <div class="g-emp-avatar" style="background:${emp.color};color:${tc}">${initials(emp.name)}</div>
+          <div class="g-emp-avatar" style="${avatarTintStyle(emp.color)}">${initials(emp.name)}</div>
           <div class="g-emp-info">
             <div class="g-emp-name">${emp.name}</div>
             <div class="g-emp-role">${emp.role || '—'}</div>
