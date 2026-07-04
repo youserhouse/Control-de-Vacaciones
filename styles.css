@@ -698,10 +698,12 @@ body.base-light .day-cell.marked.color-black { color: #fff !important; }
   border-radius: 50%; background: var(--festivo);
 }
 .day-dots {
-  position: absolute; bottom: 1px; left: 50%;
-  transform: translateX(-50%); display: flex; gap: 1.5px;
+  position: absolute; bottom: 2px; left: 50%;
+  transform: translateX(-50%); display: flex; gap: 2px;
+  padding: 1.5px 3px; border-radius: 99px;
+  background: rgba(0,0,0,.28);
 }
-.day-dot { width: 3px; height: 3px; border-radius: 50%; }
+.day-dot { width: 4px; height: 4px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,.3); }
 
 /* ── MONTHLY CALENDAR ───────────────────────────────────────── */
 .month-selector { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
@@ -758,15 +760,6 @@ body.base-light .monthly-day.empty { background: rgba(0,0,0,.025); }
   padding: 1px 6px; border-radius: 4px;
   font-size: 0.62rem; font-weight: 600;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-
-/* ── LEGEND ─────────────────────────────────────────────────── */
-.legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
-.legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.73rem; color: var(--muted); }
-.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.legend-festivo {
-  width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0;
-  background: rgba(248,113,113,.25); border: 1px solid rgba(248,113,113,.5);
 }
 
 /* ── CONFLICTS ──────────────────────────────────────────────── */

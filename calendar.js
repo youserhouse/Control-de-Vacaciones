@@ -313,7 +313,6 @@ function renderAnnual() {
   const y = state.currentYear;
   document.getElementById('year-label').textContent = y;
   renderEmpFilterSelect('annual-filter-select');
-  renderLegend('annual-legend');
   renderConflictBanner('annual-conflict-banner', y);
   const conflictKeys = new Set(getConflictDays(y).map(c=>c.key));
   const grid = document.getElementById('annual-grid');
@@ -439,18 +438,6 @@ function renderMonthly() {
   }
   html+='</div>';
   document.getElementById('monthly-calendar').innerHTML=html;
-}
-
-// ── LEGEND ────────────────────────────────────────────────────
-function renderLegend(id) {
-  let html=state.employees.map(e=>{
-    const isWhite = e.color==='#ffffff';
-    const isBlack = e.color==='#000000';
-    const dotBorder = isWhite ? 'border:1.5px solid #888;' : isBlack ? 'border:1.5px solid #aaa;' : '';
-    return `<div class="legend-item"><div class="legend-dot" style="background:${e.color};${dotBorder}"></div>${e.name}</div>`;
-  }).join('');
-  html+=`<div class="legend-item"><div class="legend-festivo"></div>Festivo (no cuenta)</div>`;
-  document.getElementById(id).innerHTML=html;
 }
 
 // ── DAY MODAL ─────────────────────────────────────────────────
