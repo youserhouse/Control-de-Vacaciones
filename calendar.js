@@ -164,11 +164,10 @@ function renderTeamList() {
     const restantes = emp.totalDays - used;
     const pct = Math.min(100, Math.round((used/emp.totalDays)*100));
     const onVacation = getDayMarks(todayKey())[emp.id] === 'V';
-    const textColor = getTextColorForBg(emp.color);
     return `
     <div class="team-row" onclick="openEditEmployee(${emp.id})">
       <div class="team-head">
-        <div class="team-avatar" style="background:${emp.color};color:${textColor}">${initials(emp.name)}</div>
+        <div class="team-avatar" style="${avatarTintStyle(emp.color)}">${initials(emp.name)}</div>
         <div class="team-name-wrap">
           <span class="team-name">${emp.name}</span>
           <span class="team-role">${emp.role||'—'}</span>
@@ -208,10 +207,9 @@ function renderUpcomingPanel() {
     return;
   }
   container.innerHTML = rows.map(({emp, block}) => {
-    const textColor = getTextColorForBg(emp.color);
     return `
     <div class="upcoming-row">
-      <div class="team-avatar" style="width:36px;height:36px;background:${emp.color};color:${textColor}">${initials(emp.name)}</div>
+      <div class="team-avatar" style="width:36px;height:36px;${avatarTintStyle(emp.color)}">${initials(emp.name)}</div>
       <div style="flex:1;min-width:0;">
         <div class="upcoming-name">${emp.name}</div>
         <div class="upcoming-range">${formatRangeLabel(block.start, block.end)}</div>
@@ -219,6 +217,59 @@ function renderUpcomingPanel() {
       <div class="upcoming-dot" style="background:${emp.color};"></div>
     </div>`;
   }).join('');
+}
+
+// ── Festivos oficiales de España / Comunidad de Madrid ─────────
+// Fecha de Domingo de Pascua (algoritmo de Meeus/Jones/Butcher),
+// usada para derivar Jueves Santo y Viernes Santo de cada año.
+function getEasterSunday(year) {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19*a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2*e + 2*i - h - k) % 7;
+  const m = Math.floor((a + 11*h + 22*l) / 451);
+  const month = Math.floor((h + l - 7*m + 114) / 31);
+  const day = ((h + l - 7*m + 114) % 31) + 1;
+  return new Date(year, month - 1, day);
+}
+
+// Festivos nacionales + de la Comunidad/municipio de Madrid con fecha fija.
+// (San Isidro y La Almudena son del Ayuntamiento de Madrid, no de toda
+// la comunidad, pero se incluyen porque suelen aplicarse igual en la
+// mayoría de calendarios laborales de la capital.)
+const MADRID_FIXED_HOLIDAYS = {
+  '1-1':   'Año Nuevo',
+  '1-6':   'Reyes Magos',
+  '5-1':   'Día del Trabajo',
+  '5-2':   'Comunidad de Madrid',
+  '5-15':  'San Isidro',
+  '8-15':  'Asunción de la Virgen',
+  '10-12': 'Fiesta Nacional',
+  '11-1':  'Todos los Santos',
+  '11-9':  'La Almudena',
+  '12-6':  'Constitución',
+  '12-8':  'Inmaculada Concepción',
+  '12-25': 'Navidad',
+};
+
+function getMadridHolidayName(year, month, day) {
+  const fixed = MADRID_FIXED_HOLIDAYS[`${month}-${day}`];
+  if (fixed) return fixed;
+
+  const easter = getEasterSunday(year);
+  const holyThu = new Date(easter); holyThu.setDate(easter.getDate() - 3);
+  const goodFri = new Date(easter); goodFri.setDate(easter.getDate() - 2);
+  if (month === holyThu.getMonth()+1 && day === holyThu.getDate()) return 'Jueves Santo';
+  if (month === goodFri.getMonth()+1 && day === goodFri.getDate()) return 'Viernes Santo';
+
+  return null;
 }
 
 function renderFestivosPanel() {
@@ -234,15 +285,16 @@ function renderFestivosPanel() {
   }
   festList.innerHTML = festivosYear.sort().map(key => {
     const p = key.split('-');
-    const mon = MONTHS[parseInt(p[1])-1].slice(0,3);
-    const weekday = WEEKDAYS_FULL[keyToDate(key).getDay()];
+    const yr = parseInt(p[0]), mo = parseInt(p[1]), da = parseInt(p[2]);
+    const mon = MONTHS[mo-1].slice(0,3);
+    const label = getMadridHolidayName(yr, mo, da) || WEEKDAYS_FULL[keyToDate(key).getDay()];
     return `
     <div class="festivo-row">
       <div class="festivo-date-badge">
-        <span class="fd-day">${parseInt(p[2])}</span>
+        <span class="fd-day">${da}</span>
         <span class="fd-mon">${mon}</span>
       </div>
-      <span class="festivo-label">${weekday}</span>
+      <span class="festivo-name">${label}</span>
       <button class="festivo-del" onclick="removeFestivo('${key}')" title="Eliminar">×</button>
     </div>`;
   }).join('');
