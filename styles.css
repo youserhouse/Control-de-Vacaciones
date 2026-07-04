@@ -499,11 +499,7 @@ main { padding: 26px 28px; flex: 1; }
   align-items: start;
 }
 @media (max-width: 1000px) {
-  .dash-grid { grid-template-columns: 1fr; }
-  /* En móvil, "Próximas vacaciones" y "Festivos" van primero: son más
-     cortos y así se ven sin bajar por toda la lista de Equipo */
-  .dash-col-side { order: 1; }
-  .dash-col-team { order: 2; }
+  .dash-grid { grid-template-columns: 1.2fr 1fr; gap: 10px; }
 }
 
 .panel-card {
@@ -602,6 +598,31 @@ main { padding: 26px 28px; flex: 1; }
 }
 .festivo-row .festivo-del:hover { opacity: 1; }
 .no-festivos { color: var(--muted); font-size: 0.8rem; font-style: italic; }
+
+/* Prueba: en pantallas muy estrechas mantiene 2 columnas (en vez de
+   apilar a 1) reduciendo tamaños para que quepa todo — revertir a la
+   regla de 1 columna si no queda bien */
+@media (max-width: 640px) {
+  .panel-card { padding: 12px 10px; }
+  .panel-card-head { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .panel-card-head .btn { align-self: flex-end; font-size: 0.68rem; padding: 5px 9px; }
+  .panel-card-title { font-size: 0.8rem; }
+  .panel-card-sub { font-size: 0.62rem; }
+  .team-row { padding: 9px 0; }
+  .team-avatar { width: 26px; height: 26px; font-size: 0.6rem; border-radius: 7px; }
+  .team-name { font-size: 0.7rem; }
+  .team-role { display: none; }
+  .status-pill { font-size: 0.56rem; padding: 3px 7px; }
+  .team-caption { font-size: 0.6rem; }
+  .upcoming-row { gap: 7px; padding: 7px 0; }
+  .upcoming-name { font-size: 0.68rem; }
+  .upcoming-range { font-size: 0.6rem; }
+  .festivo-row { gap: 7px; }
+  .festivo-date-badge { width: 28px; height: 28px; }
+  .festivo-date-badge .fd-day { font-size: 0.68rem; }
+  .festivo-date-badge .fd-mon { font-size: 0.42rem; }
+  .festivo-row .festivo-label { font-size: 0.66rem; }
+}
 
 /* ── YEAR NAV ───────────────────────────────────────────────── */
 .year-nav { display: flex; align-items: center; gap: 14px; }
