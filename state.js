@@ -217,9 +217,6 @@ function applyTheme() {
     if (span) span.textContent = label; else btn.textContent = label;
   }
 
-  const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.content = info.accent;
-
   THEME_ORDER.forEach(n => {
     const c = document.getElementById('tc-' + THEME_INFO[n].cls.replace('theme-', ''));
     if (c) c.classList.toggle('active', n === t);
