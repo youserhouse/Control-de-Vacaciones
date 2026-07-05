@@ -1,7 +1,7 @@
 // ── Control de Vacaciones — Service Worker ────────────────────
 // Versión de caché: cambia este número cuando actualices la app
 // para que los usuarios reciban la versión nueva automáticamente
-const CACHE_NAME = 'vacaciones-v30';
+const CACHE_NAME = 'vacaciones-v31';
 
 // Archivos que se guardan en caché para funcionar sin internet
 const ASSETS = [
