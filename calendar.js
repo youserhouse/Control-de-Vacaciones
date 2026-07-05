@@ -160,9 +160,10 @@ function renderTeamList() {
   }
 
   container.innerHTML = emps.map(emp => {
-    const used = countVacDays(emp.id, y);
-    const restantes = emp.totalDays - used;
-    const pct = Math.min(100, Math.round((used/emp.totalDays)*100));
+    const totalMarked = countVacDays(emp.id, y);
+    const pastUsed = countPastVacDays(emp.id, y);
+    const restantes = emp.totalDays - totalMarked;
+    const pct = Math.min(100, Math.round((pastUsed/emp.totalDays)*100));
     const onVacation = getDayMarks(todayKey())[emp.id] === 'V';
     return `
     <div class="team-row" onclick="openEditEmployee(${emp.id})">
@@ -179,7 +180,7 @@ function renderTeamList() {
       </div>
       <div class="team-progress-track"><div class="team-progress-fill" style="width:${pct}%;background:${emp.color};"></div></div>
       <div class="team-caption">
-        <span>${used} de ${emp.totalDays} días usados</span>
+        <span>${pastUsed} de ${emp.totalDays} días disfrutados</span>
         <span class="pct">${pct}%</span>
       </div>
     </div>`;
