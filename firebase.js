@@ -39,6 +39,66 @@ async function loadSecret(fieldName) {
 }
 window.loadSecret = loadSecret;
 
+// ── TAREAS SEMANALES (rotación + bajas) ─────────────────────────
+// Colecciones nuevas e independientes del documento único `vacaciones/estado`:
+// se leen/escriben por semana bajo demanda (sin listener en tiempo real —
+// baja concurrencia, no necesita la sincronía instantánea que sí necesita
+// el calendario de vacaciones).
+const _rotationCache = {};
+const _bajasCache = {};
+
+async function getRotationDoc(weekKey) {
+  if (_rotationCache[weekKey]) return _rotationCache[weekKey];
+  try {
+    const snap = await db.collection('rotacionSemanal').doc(weekKey).get();
+    const data = snap.exists ? snap.data() : { weekKey, assignments: {} };
+    if (!data.assignments) data.assignments = {};
+    _rotationCache[weekKey] = data;
+    return data;
+  } catch(e) {
+    console.warn('No se pudo leer rotacionSemanal/' + weekKey, e.message);
+    return { weekKey, assignments: {} };
+  }
+}
+
+async function saveRotationDoc(weekKey, assignments) {
+  const data = {
+    weekKey,
+    assignments,
+    updatedAt: new Date().toISOString(),
+    updatedBy: (window.currentUser && window.currentUser.email) || null
+  };
+  await db.collection('rotacionSemanal').doc(weekKey).set(data);
+  _rotationCache[weekKey] = data;
+  return data;
+}
+
+async function getBajasDoc(weekKey) {
+  if (_bajasCache[weekKey]) return _bajasCache[weekKey];
+  try {
+    const snap = await db.collection('bajas').doc(weekKey).get();
+    const data = snap.exists ? snap.data() : { weekKey, employeeIds: [] };
+    if (!data.employeeIds) data.employeeIds = [];
+    _bajasCache[weekKey] = data;
+    return data;
+  } catch(e) {
+    console.warn('No se pudo leer bajas/' + weekKey, e.message);
+    return { weekKey, employeeIds: [] };
+  }
+}
+
+async function saveBajasDoc(weekKey, employeeIds) {
+  const data = { weekKey, employeeIds };
+  await db.collection('bajas').doc(weekKey).set(data);
+  _bajasCache[weekKey] = data;
+  return data;
+}
+
+window.getRotationDoc = getRotationDoc;
+window.saveRotationDoc = saveRotationDoc;
+window.getBajasDoc = getBajasDoc;
+window.saveBajasDoc = saveBajasDoc;
+
 // ── AUTH ──────────────────────────────────────────────────────
 function logoutUser() { auth.signOut(); }
 
@@ -125,9 +185,7 @@ async function startSync() {
     if (snap.exists) {
       mergeRemoteState(snap.data());
       if (window.showView) {
-        const activeTab = document.querySelector('.tab-btn.active');
-        const idx = activeTab ? [...document.querySelectorAll('.tab-btn')].indexOf(activeTab) : 0;
-        window.showView(['dashboard','annual','monthly'][idx]);
+        window.showView(window._lastActiveView || 'dashboard');
       }
       diagMsg('✅ Datos cargados', '#4ade80');
     } else {
@@ -147,9 +205,7 @@ async function startSync() {
     if (!snap.exists || isSyncing) return;
     mergeRemoteState(snap.data());
     if (window.showView) {
-      const activeTab = document.querySelector('.tab-btn.active');
-      const idx = activeTab ? [...document.querySelectorAll('.tab-btn')].indexOf(activeTab) : 0;
-      window.showView(['dashboard','annual','monthly'][idx]);
+      window.showView(window._lastActiveView || 'dashboard');
     }
     showSync('✓ Sincronizado');
     setTimeout(hideSync, 1500);
