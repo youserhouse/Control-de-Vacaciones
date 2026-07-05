@@ -991,7 +991,14 @@ body.base-light .monthly-day.empty { background: rgba(0,0,0,.025); }
   .app-wrapper { margin-left: 0; }
   .sidebar-toggle { display: flex !important; }
   main { padding: 16px; }
-  .app-header { padding: 0 16px; }
+  .app-header {
+    height: auto;
+    flex-wrap: wrap;
+    padding: 14px 16px;
+    row-gap: 12px;
+  }
+  .page-title { font-size: 1.05rem; }
+  .header-actions { flex-basis: 100%; flex-wrap: wrap; }
   .stats-bar { grid-template-columns: repeat(2, 1fr); }
   .header-search input { width: 130px; }
 }
