@@ -1001,6 +1001,11 @@ body.base-light .monthly-day.empty { background: rgba(0,0,0,.025); }
   .header-actions { flex-basis: 100%; flex-wrap: wrap; }
   .stats-bar { grid-template-columns: repeat(2, 1fr); }
   .header-search input { width: 130px; }
+  .dash-grid .panel-card {
+    margin-left: -16px;
+    margin-right: -16px;
+    border-radius: 0;
+  }
 }
 
 @media (max-width: 500px) {
