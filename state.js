@@ -175,12 +175,6 @@ function avatarTintStyle(color) {
   return `background:${color}28;color:${color};${border}`;
 }
 
-function colorClasses(color) {
-  if (color === '#ffffff') return 'marked color-white bg-white';
-  if (color === '#000000') return 'marked color-black bg-black';
-  return 'marked';
-}
-
 // ── THEME ─────────────────────────────────────────────────────
 const THEME_ORDER = ['dark', 'light', 'lightForest', 'forest', 'indigo'];
 const THEME_INFO = {

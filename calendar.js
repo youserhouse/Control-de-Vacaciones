@@ -337,7 +337,7 @@ function renderAnnual() {
         return String(id)===String(state.filterEmpId);
       });
       const weekend=isWeekend(y,m,d), isToday=key===todayKey();
-      let bg='transparent', cls='day-cell';
+      let cellStyle='', cls='day-cell';
       if(weekend) cls+=' weekend';
       if(isToday) cls+=' today';
       if(festivo) cls+=' is-festivo';
@@ -345,7 +345,7 @@ function renderAnnual() {
       let dotsHtml='';
       if(markedEmps.length===1){
         const emp=state.employees.find(e=>e.id===markedEmps[0]);
-        if(emp){ bg=emp.color; cls+=' '+colorClasses(emp.color); }
+        if(emp){ cls+=' marked'; cellStyle=avatarTintStyle(emp.color); }
       } else if(markedEmps.length>1){
         cls+=' multi-marked';
         dotsHtml=`<div class="day-dots">${markedEmps.slice(0,4).map(id=>{
@@ -358,7 +358,7 @@ function renderAnnual() {
       const birthdays=getBirthdaysOnKey(key);
       const bdCorner=birthdays.length?`<div class="birthday-corner">🎂</div>`:'';
       const title=birthdays.length?`title="🎂 ${birthdays.map(e=>e.name).join(', ')}"`:isConflict?`title="⚠️ Conflicto"`:'';
-      html+=`<div class="${cls}" style="background:${bg}" onclick="openDayModal('${key}')" ${title}>${d}${dotsHtml}${fCorner}${conflictIcon}${bdCorner}</div>`;
+      html+=`<div class="${cls}" style="${cellStyle}" onclick="openDayModal('${key}')" ${title}>${d}${dotsHtml}${fCorner}${conflictIcon}${bdCorner}</div>`;
     }
     html+='</div>';
     block.innerHTML=html;
