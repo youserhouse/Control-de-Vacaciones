@@ -3,34 +3,64 @@
 // entre un subconjunto de empleados, semana a semana. Datos en
 // Firestore (colecciones rotacionSemanal/bajas), fuera del
 // documento único vacaciones/estado — ver firebase.js.
+//
+// El reparto por defecto sigue el ciclo real del almacén: cada
+// semana la tarea de cada operario avanza una posición fija, y a
+// la sexta semana se repite igual que la primera — ver
+// computeDefaultAssignments().
 
 let _wtWeekKey = weekKeyFor(new Date()); // lunes de la semana mostrada, no persistido (como _gMonth/_gYear en gantt.js)
 let _wtDraftAssignments = {}; // taskIndex (number) -> employeeId, borrador en memoria
 let _wtDraftBajas = [];       // employeeIds de baja esta semana, borrador en memoria
+let _wtOrderDraft = [];       // employeeIds en orden de rotación, borrador mientras el modal está abierto
+
+function getOrderedParticipants() {
+  return state.employees
+    .filter(e => e.participatesInRotation)
+    .sort((a, b) => (a.rotationOrder ?? 999) - (b.rotationOrder ?? 999));
+}
 
 function changeWeekTasks(delta) {
   _wtWeekKey = weekKeyAddDays(_wtWeekKey, delta * 7);
   renderWeeklyTasks();
 }
 
+function renderTheadOnce() {
+  const thead = document.getElementById('wt-thead');
+  if (!thead || thead.childElementCount) return; // solo se construye una vez, las tareas son fijas
+  thead.innerHTML = `<tr>
+    <th class="wt-th-emp">Operario</th>
+    ${WEEKLY_TASKS.map(t => `<th>${t}</th>`).join('')}
+  </tr>`;
+}
+
 async function renderWeeklyTasks() {
+  renderTheadOnce();
+
   const titleEl = document.getElementById('wt-week-title');
   const dates = weekDatesFor(_wtWeekKey);
-  if (titleEl) titleEl.textContent = 'Semana del ' + formatRangeLabel(dates[0], dates[4]);
+  const isoWeek = getISOWeekNumber(keyToDate(_wtWeekKey));
+  if (titleEl) titleEl.textContent = `Semana ${isoWeek} · ${formatRangeLabel(dates[0], dates[4])}`;
 
   const container = document.getElementById('wt-rows');
-  if (container) container.innerHTML = '<div class="team-empty">Cargando…</div>';
+  if (container) container.innerHTML = '<tr><td class="team-empty" colspan="6">Cargando…</td></tr>';
 
   const [rotationDoc, bajasDoc] = await Promise.all([
     window.getRotationDoc(_wtWeekKey),
     window.getBajasDoc(_wtWeekKey)
   ]);
 
-  _wtDraftAssignments = {};
-  Object.entries(rotationDoc.assignments || {}).forEach(([idx, empId]) => {
-    if (empId !== null && empId !== undefined) _wtDraftAssignments[Number(idx)] = empId;
-  });
   _wtDraftBajas = (bajasDoc.employeeIds || []).slice();
+
+  if (rotationDoc.exists) {
+    _wtDraftAssignments = {};
+    Object.entries(rotationDoc.assignments || {}).forEach(([idx, empId]) => {
+      if (empId !== null && empId !== undefined) _wtDraftAssignments[Number(idx)] = empId;
+    });
+  } else {
+    // nadie guardó nunca una rotación para esta semana — autocompleta con el ciclo real
+    _wtDraftAssignments = computeDefaultAssignments(_wtWeekKey, getOrderedParticipants());
+  }
 
   renderTaskTable();
 }
@@ -51,52 +81,76 @@ function taskIndexOf(empId) {
   return found ? Number(found[0]) : '';
 }
 
+// Ciclo real: tarea = (orden del operario + semana ISO) mod 5 — reproduce la
+// planilla física exactamente. Quien no está disponible esa semana no se
+// autoasigna; si sobran participantes respecto a las 5 tareas (más de 5
+// activos, u órdenes no contiguos), el de menor orden se queda la celda y el
+// resto queda sin asignar esa semana — no se dobla nadie en una tarea.
+function computeDefaultAssignments(weekKey, participants) {
+  const isoWeek = getISOWeekNumber(keyToDate(weekKey));
+  const n = WEEKLY_TASKS.length;
+  const assignments = {};
+  participants
+    .filter(emp => getAvailability(emp.id).available)
+    .forEach(emp => {
+      const r = emp.rotationOrder ?? 0;
+      const taskIndex = ((r + isoWeek) % n + n) % n;
+      if (assignments[taskIndex] === undefined) assignments[taskIndex] = emp.id;
+    });
+  return assignments;
+}
+
 function renderTaskTable() {
   const container = document.getElementById('wt-rows');
   if (!container) return;
-  const participants = state.employees.filter(e => e.participatesInRotation);
+  const participants = getOrderedParticipants();
 
   if (!participants.length) {
-    container.innerHTML = '<div class="team-empty">Nadie participa todavía en la rotación. Usá "Gestionar participantes" para elegir quién.</div>';
+    container.innerHTML = '<tr><td class="team-empty" colspan="6">Nadie participa todavía en la rotación. Usá "Gestionar participantes" para elegir quién.</td></tr>';
     return;
   }
 
   container.innerHTML = participants.map(emp => {
     const { available, reason } = getAvailability(emp.id);
     const currentTask = taskIndexOf(emp.id);
-    const options = [`<option value="" ${currentTask === '' ? 'selected' : ''}>Sin asignar</option>`]
-      .concat(WEEKLY_TASKS.map((t, i) => `<option value="${i}" ${currentTask === i ? 'selected' : ''}>${t}</option>`))
-      .join('');
     const pill = !available
       ? `<span class="wt-status-pill ${reason === 'De baja' ? 'wt-status-baja' : 'wt-status-vac'}">${reason}</span>`
       : '';
-    const bajaLabel = _wtDraftBajas.includes(emp.id) ? 'Quitar baja' : 'Marcar de baja';
+    const bajaActive = _wtDraftBajas.includes(emp.id);
+    const bajaTitle = bajaActive ? 'Quitar baja' : 'Marcar de baja';
+
+    const cells = WEEKLY_TASKS.map((_, taskIdx) => {
+      const active = currentTask === taskIdx;
+      const classes = ['wt-cell', active ? 'wt-cell-active' : '', !available ? 'wt-cell-disabled' : ''].filter(Boolean).join(' ');
+      const onclick = available ? ` onclick="onCellClick(${emp.id}, ${taskIdx})"` : '';
+      return `<td class="${classes}"${onclick}>${active ? '<span class="wt-check">✓</span>' : ''}</td>`;
+    }).join('');
+
     return `
-    <div class="gantt-row wt-row">
-      <div class="g-emp-col">
+    <tr class="wt-grid-row ${!available ? 'wt-row-unavailable' : ''}">
+      <td class="wt-td-emp">
         <div class="g-emp-avatar" style="${avatarTintStyle(emp.color)}">${initials(emp.name)}</div>
         <div class="g-emp-info">
           <div class="g-emp-name">${emp.name}</div>
-          <div class="g-emp-role">${emp.role || '—'}</div>
+          <div class="g-emp-role">${emp.role || '—'}${pill}</div>
         </div>
-      </div>
-      <div class="wt-row-right">
-        ${pill}
-        <button class="btn btn-ghost wt-baja-btn" onclick="toggleBaja(${emp.id})">${bajaLabel}</button>
-        <select class="wt-task-select" ${available ? '' : 'disabled'} onchange="onTaskChange(${emp.id}, this.value)">
-          ${options}
-        </select>
-      </div>
-    </div>`;
+        <button class="wt-baja-icon-btn ${bajaActive ? 'is-active' : ''}" title="${bajaTitle}" onclick="toggleBaja(${emp.id})">⛔</button>
+      </td>
+      ${cells}
+    </tr>`;
   }).join('');
 }
 
-function onTaskChange(empId, taskIndexOrEmpty) {
+// Clic en celda: "roba" la tarea (se libera cualquier índice que ese empleado
+// tuviera antes de asignar la nueva — quien la tenía queda "sin asignar" en el
+// próximo render, vía taskIndexOf). Clic sobre la celda ya activa: se desmarca.
+function onCellClick(empId, taskIndex) {
+  const current = taskIndexOf(empId);
   Object.keys(_wtDraftAssignments).forEach(idx => {
     if (_wtDraftAssignments[idx] === empId) delete _wtDraftAssignments[idx];
   });
-  if (taskIndexOrEmpty !== '') {
-    _wtDraftAssignments[Number(taskIndexOrEmpty)] = empId;
+  if (current !== taskIndex) {
+    _wtDraftAssignments[taskIndex] = empId;
   }
   renderTaskTable();
 }
@@ -115,65 +169,10 @@ async function toggleBaja(empId) {
   renderTaskTable();
 }
 
-// Sugiere una rotación para la semana mostrada: nadie repite la tarea que tuvo
-// la semana anterior. Quien sobra (más disponibles que tareas) queda sin
-// asignar — no se guarda hasta pulsar "Guardar".
-async function suggestRotation() {
-  const prevKey = weekKeyAddDays(_wtWeekKey, -7);
-  const prevDoc = await window.getRotationDoc(prevKey);
-  const prevAssignments = prevDoc.assignments || {};
-  const prevTaskOf = {};
-  Object.entries(prevAssignments).forEach(([idx, empId]) => {
-    if (empId !== null && empId !== undefined) prevTaskOf[empId] = Number(idx);
-  });
-
-  const participants = state.employees.filter(e => e.participatesInRotation);
-  const available = participants.filter(e => getAvailability(e.id).available).map(e => e.id);
-
-  const taskCount = WEEKLY_TASKS.length;
-  const candidatesFor = empId => {
-    const forbidden = prevTaskOf[empId];
-    const all = [...Array(taskCount).keys()];
-    return forbidden === undefined ? all : all.filter(i => i !== forbidden);
-  };
-
-  // ordenar por menos candidatos primero, reduce el backtracking
-  const people = [...available].sort((a, b) => candidatesFor(a).length - candidatesFor(b).length);
-  let assignments = {};
-  const usedTasks = new Set();
-
-  function backtrack(i) {
-    if (i >= people.length) return true;
-    const empId = people[i];
-    const candidates = candidatesFor(empId).filter(t => !usedTasks.has(t));
-    for (const t of candidates) {
-      usedTasks.add(t);
-      assignments[t] = empId;
-      if (backtrack(i + 1)) return true;
-      usedTasks.delete(t);
-      delete assignments[t];
-    }
-    return false;
-  }
-
-  const solved = backtrack(0);
-  if (!solved) {
-    // caso raro: relaja "no repetir" solo para quien lo necesite
-    assignments = {};
-    usedTasks.clear();
-    for (const empId of people) {
-      let candidates = candidatesFor(empId).filter(t => !usedTasks.has(t));
-      if (!candidates.length) candidates = [...Array(taskCount).keys()].filter(t => !usedTasks.has(t));
-      if (!candidates.length) continue; // sobra gente respecto a tareas — queda sin asignar
-      const t = candidates[0];
-      usedTasks.add(t);
-      assignments[t] = empId;
-    }
-  }
-
-  _wtDraftAssignments = assignments;
+function suggestRotation() {
+  _wtDraftAssignments = computeDefaultAssignments(_wtWeekKey, getOrderedParticipants());
   renderTaskTable();
-  showToast('✅ Rotación sugerida — revisá y guardá');
+  showToast('✅ Rotación recalculada — revisá y guardá');
 }
 
 async function saveWeeklyTasks() {
@@ -186,18 +185,59 @@ function openParticipantsConfig() {
   if (list) {
     list.innerHTML = state.employees.map(emp => `
       <label class="wt-participant-row">
-        <input type="checkbox" id="wt-part-${emp.id}" ${emp.participatesInRotation ? 'checked' : ''}>
+        <input type="checkbox" id="wt-part-${emp.id}" ${emp.participatesInRotation ? 'checked' : ''} onchange="onParticipantToggle(${emp.id}, this.checked)">
         <div class="g-emp-avatar" style="width:28px;height:28px;font-size:.7rem;${avatarTintStyle(emp.color)}">${initials(emp.name)}</div>
         <span>${emp.name}</span>
       </label>`).join('');
   }
+  _wtOrderDraft = getOrderedParticipants().map(e => e.id);
+  renderOrderList();
   openModal('wt-participants-modal');
+}
+
+function onParticipantToggle(empId, checked) {
+  if (checked && !_wtOrderDraft.includes(empId)) _wtOrderDraft.push(empId);
+  if (!checked) _wtOrderDraft = _wtOrderDraft.filter(id => id !== empId);
+  renderOrderList();
+}
+
+function renderOrderList() {
+  const list = document.getElementById('wt-order-list');
+  if (!list) return;
+  if (!_wtOrderDraft.length) {
+    list.innerHTML = '<div class="team-empty">Marcá participantes arriba para ordenarlos.</div>';
+    return;
+  }
+  list.innerHTML = _wtOrderDraft.map((empId, idx) => {
+    const emp = state.employees.find(e => e.id === empId);
+    if (!emp) return '';
+    return `
+    <div class="wt-order-row">
+      <span class="wt-order-badge">${idx + 1}.</span>
+      <div class="g-emp-avatar" style="width:26px;height:26px;font-size:.66rem;${avatarTintStyle(emp.color)}">${initials(emp.name)}</div>
+      <span class="wt-order-name">${emp.name}</span>
+      <button class="wt-order-btn" ${idx === 0 ? 'disabled' : ''} onclick="moveParticipant(${empId}, -1)">↑</button>
+      <button class="wt-order-btn" ${idx === _wtOrderDraft.length - 1 ? 'disabled' : ''} onclick="moveParticipant(${empId}, 1)">↓</button>
+    </div>`;
+  }).join('');
+}
+
+function moveParticipant(empId, dir) {
+  const i = _wtOrderDraft.indexOf(empId);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= _wtOrderDraft.length) return;
+  [_wtOrderDraft[i], _wtOrderDraft[j]] = [_wtOrderDraft[j], _wtOrderDraft[i]];
+  renderOrderList();
 }
 
 function saveParticipantsConfig() {
   state.employees.forEach(emp => {
     const chk = document.getElementById('wt-part-' + emp.id);
     if (chk) emp.participatesInRotation = chk.checked;
+  });
+  _wtOrderDraft.forEach((empId, idx) => {
+    const emp = state.employees.find(e => e.id === empId);
+    if (emp) emp.rotationOrder = idx;
   });
   saveState();
   closeModal('wt-participants-modal');

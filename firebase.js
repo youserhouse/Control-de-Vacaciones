@@ -53,24 +53,25 @@ async function getRotationDoc(weekKey) {
     const snap = await db.collection('rotacionSemanal').doc(weekKey).get();
     const data = snap.exists ? snap.data() : { weekKey, assignments: {} };
     if (!data.assignments) data.assignments = {};
+    data.exists = snap.exists; // distingue "nunca se guardó" de "se guardó vacío"
     _rotationCache[weekKey] = data;
     return data;
   } catch(e) {
     console.warn('No se pudo leer rotacionSemanal/' + weekKey, e.message);
-    return { weekKey, assignments: {} };
+    return { weekKey, assignments: {}, exists: false };
   }
 }
 
 async function saveRotationDoc(weekKey, assignments) {
-  const data = {
+  const toSave = {
     weekKey,
     assignments,
     updatedAt: new Date().toISOString(),
     updatedBy: (window.currentUser && window.currentUser.email) || null
   };
-  await db.collection('rotacionSemanal').doc(weekKey).set(data);
-  _rotationCache[weekKey] = data;
-  return data;
+  await db.collection('rotacionSemanal').doc(weekKey).set(toSave);
+  _rotationCache[weekKey] = { ...toSave, exists: true };
+  return _rotationCache[weekKey];
 }
 
 async function getBajasDoc(weekKey) {

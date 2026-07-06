@@ -31,6 +31,11 @@ function loadState() {
       if (!p.compatibleRoles) p.compatibleRoles = [['Encargado','Piker']];
       p.employees.forEach(e => { if (!e.birthday) e.birthday = ''; });
       p.employees.forEach(e => { if (e.participatesInRotation === undefined) e.participatesInRotation = false; });
+      let _nextRotOrder = 1 + p.employees.reduce((max, e) =>
+        (e.participatesInRotation && typeof e.rotationOrder === 'number') ? Math.max(max, e.rotationOrder) : max, -1);
+      p.employees.forEach(e => {
+        if (e.participatesInRotation && typeof e.rotationOrder !== 'number') e.rotationOrder = _nextRotOrder++;
+      });
       migrateFestivoEmployee(p);
       if (p.theme === 'mecafilter') p.theme = 'forest';
       delete p.activeFilters;
@@ -116,6 +121,15 @@ function weekDatesFor(weekKey) {
     out.push(dateKey(dt.getFullYear(), dt.getMonth(), dt.getDate()));
   }
   return out;
+}
+// Número de semana ISO-8601 (lunes=inicio, semana 1 = la que contiene el primer jueves del año)
+function getISOWeekNumber(date) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const dayNum = d.getDay() === 0 ? 7 : d.getDay();
+  d.setDate(d.getDate() + 4 - dayNum); // jueves de esa misma semana
+  const yearStart = new Date(d.getFullYear(), 0, 1); // año de `d` ya desplazado (clave en cruce de año)
+  const diffDays = Math.round((d - yearStart) / 86400000);
+  return Math.ceil((diffDays + 1) / 7);
 }
 function initials(name){ return name.slice(0,2).toUpperCase(); }
 function getDayMarks(key){ return state.marks[key]||{}; }

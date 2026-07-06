@@ -314,11 +314,16 @@
             <span class="panel-card-title">Rotación de tareas</span>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
               <button class="btn btn-ghost" onclick="openParticipantsConfig()">Gestionar participantes</button>
-              <button class="btn btn-ghost" onclick="suggestRotation()">Sugerir rotación</button>
+              <button class="btn btn-ghost" onclick="suggestRotation()">Recalcular automático</button>
               <button class="btn btn-accent" onclick="saveWeeklyTasks()">Guardar</button>
             </div>
           </div>
-          <div id="wt-rows"></div>
+          <div class="wt-table-wrap">
+            <table class="wt-table">
+              <thead id="wt-thead"></thead>
+              <tbody id="wt-rows"></tbody>
+            </table>
+          </div>
         </div>
 
       </div>
@@ -608,11 +613,15 @@
 
 <!-- Participantes de la rotación de tareas semanales -->
 <div class="overlay" id="wt-participants-modal">
-  <div class="modal" style="width:420px;">
+  <div class="modal" style="width:480px;">
     <h3>Participantes en la rotación</h3>
     <div class="form-group">
       <label>Qué operarios rotan por las 5 tareas semanales</label>
       <div id="wt-participants-list" style="margin-top:10px;display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+    <div class="form-group">
+      <label>Orden de rotación (arriba = primero en el ciclo)</label>
+      <div id="wt-order-list" style="margin-top:10px;display:flex;flex-direction:column;gap:6px;"></div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('wt-participants-modal')">Cerrar</button>
