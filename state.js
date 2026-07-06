@@ -29,6 +29,7 @@ function loadState() {
       if (!p.conflictThresholdTotal) p.conflictThresholdTotal = 99;
       if (!p.customRoles) p.customRoles = [];
       if (!p.compatibleRoles) p.compatibleRoles = [['Encargado','Piker']];
+      if (typeof p.wtAllowVacationAssign !== 'boolean') p.wtAllowVacationAssign = false;
       p.employees.forEach(e => { if (!e.birthday) e.birthday = ''; });
       p.employees.forEach(e => { if (e.participatesInRotation === undefined) e.participatesInRotation = false; });
       let _nextRotOrder = 1 + p.employees.reduce((max, e) =>
@@ -55,6 +56,7 @@ function loadState() {
     conflictThresholdTotal: 99,
     customRoles: [],
     compatibleRoles: [['Encargado','Piker']],
+    wtAllowVacationAssign: false,
   };
 }
 

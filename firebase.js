@@ -69,7 +69,12 @@ async function saveRotationDoc(weekKey, assignments) {
     updatedAt: new Date().toISOString(),
     updatedBy: (window.currentUser && window.currentUser.email) || null
   };
-  await db.collection('rotacionSemanal').doc(weekKey).set(toSave);
+  try {
+    await db.collection('rotacionSemanal').doc(weekKey).set(toSave);
+  } catch(e) {
+    console.error('No se pudo guardar rotacionSemanal/' + weekKey, e.message);
+    throw e; // no se actualiza la caché — un fallo no debe darse por guardado
+  }
   _rotationCache[weekKey] = { ...toSave, exists: true };
   return _rotationCache[weekKey];
 }
@@ -90,7 +95,12 @@ async function getBajasDoc(weekKey) {
 
 async function saveBajasDoc(weekKey, employeeIds) {
   const data = { weekKey, employeeIds };
-  await db.collection('bajas').doc(weekKey).set(data);
+  try {
+    await db.collection('bajas').doc(weekKey).set(data);
+  } catch(e) {
+    console.error('No se pudo guardar bajas/' + weekKey, e.message);
+    throw e; // no se actualiza la caché — un fallo no debe darse por guardado
+  }
   _bajasCache[weekKey] = data;
   return data;
 }
@@ -165,6 +175,7 @@ function mergeRemoteState(remote) {
   if (remote.conflictThreshold) state.conflictThreshold = remote.conflictThreshold;
   if (remote.conflictThresholdTotal) state.conflictThresholdTotal = remote.conflictThresholdTotal;
   if (remote.customRoles) state.customRoles = remote.customRoles;
+  if (typeof remote.wtAllowVacationAssign === 'boolean') state.wtAllowVacationAssign = remote.wtAllowVacationAssign;
   if (remote.compatibleRoles) {
     try {
       state.compatibleRoles = typeof remote.compatibleRoles === 'string'

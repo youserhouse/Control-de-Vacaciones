@@ -405,6 +405,7 @@ main { padding: 26px 28px; flex: 1; }
 .btn-import:hover { background: #1d4ed8; color: #fff; }
 .btn-green { background: #3fae5f; color: #fff; }
 .btn-green:hover { filter: brightness(1.08); }
+.btn:disabled { opacity: .6; cursor: not-allowed; filter: none; }
 
 /* ── HEADER SEARCH ──────────────────────────────────────────── */
 .header-search { position: relative; }
@@ -1308,6 +1309,13 @@ body.base-light .g-cell-wknd { background: rgba(0,0,0,.03); }
   display: flex; align-items: center; gap: 10px; cursor: pointer;
   text-transform: none; font-size: 0.86rem; font-weight: 500;
   margin-bottom: 0; color: var(--text);
+}
+.wt-participant-name { flex: 1; }
+/* Especificidad suficiente para pisar .form-group input (width:100%, padding,
+   borde) que de otro modo infla el checkbox nativo a un rectángulo enorme. */
+.wt-participant-row input[type=checkbox] {
+  width: 16px; height: 16px; padding: 0; border: none; background: none;
+  border-radius: 0; flex-shrink: 0; accent-color: var(--accent); cursor: pointer;
 }
 
 .wt-order-row { display: flex; align-items: center; gap: 8px; padding: 4px 2px; }
