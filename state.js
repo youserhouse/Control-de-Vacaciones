@@ -6,6 +6,7 @@ const DEFAULT_ROLES = ['Encargado','Piker'];
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DAYS_SHORT = ['L','M','X','J','V','S','D'];
 const WEEKDAYS_FULL = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const WEEKLY_TASKS = ['Descarga 1', 'Pedir jaulas y recoger cartones almacén', 'Carga/Embalaje', 'Carga y Desc. 2', 'Correo Gefco'];
 
 const DEFAULT_EMPLOYEES = [
   { id: 1, name: 'Ana',    role: 'Flotante', color: '#e74c3c', totalDays: 28 },
@@ -29,6 +30,7 @@ function loadState() {
       if (!p.customRoles) p.customRoles = [];
       if (!p.compatibleRoles) p.compatibleRoles = [['Encargado','Piker']];
       p.employees.forEach(e => { if (!e.birthday) e.birthday = ''; });
+      p.employees.forEach(e => { if (e.participatesInRotation === undefined) e.participatesInRotation = false; });
       migrateFestivoEmployee(p);
       if (p.theme === 'mecafilter') p.theme = 'forest';
       delete p.activeFilters;
@@ -88,6 +90,33 @@ function isWeekend(y,m,d){ const w=new Date(y,m,d).getDay(); return w===0||w===6
 function todayKey(){ const t=new Date(); return `${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())}`; }
 function dateKey(y,m,d){ return `${y}-${pad(m+1)}-${pad(d)}`; }
 function pad(n){ return String(n).padStart(2,'0'); }
+
+// Lunes de la semana que contiene `date` (convención lunes-primero, igual que firstDayOfMonth)
+function mondayOfWeek(date) {
+  const dow = date.getDay(); // 0=domingo..6=sábado
+  const diffToMonday = dow === 0 ? -6 : 1 - dow;
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  d.setDate(d.getDate() + diffToMonday);
+  return d;
+}
+function weekKeyFor(date) {
+  const m = mondayOfWeek(date);
+  return dateKey(m.getFullYear(), m.getMonth(), m.getDate());
+}
+function weekKeyAddDays(weekKey, days) {
+  const [y,m,d] = weekKey.split('-').map(Number);
+  const dt = new Date(y, m-1, d + days);
+  return weekKeyFor(dt);
+}
+function weekDatesFor(weekKey) {
+  const [y,m,d] = weekKey.split('-').map(Number);
+  const out = [];
+  for (let i = 0; i < 7; i++) {
+    const dt = new Date(y, m-1, d + i);
+    out.push(dateKey(dt.getFullYear(), dt.getMonth(), dt.getDate()));
+  }
+  return out;
+}
 function initials(name){ return name.slice(0,2).toUpperCase(); }
 function getDayMarks(key){ return state.marks[key]||{}; }
 function isFestivo(key){ return !!state.festivos[key]; }
@@ -233,10 +262,11 @@ function showView(v) {
   if (navEl) navEl.classList.add('active');
 
   const meta = {
-    dashboard: { title: 'Resumen',              sub: 'Panel general de vacaciones' },
-    annual:    { title: 'Calendario Anual',     sub: 'Vista completa del año' },
-    monthly:   { title: 'Calendario Mensual',   sub: 'Vista mensual detallada' },
-    gantt:     { title: 'Línea de tiempo',      sub: 'Vista Gantt de vacaciones por empleado' }
+    dashboard:   { title: 'Resumen',              sub: 'Panel general de vacaciones' },
+    annual:      { title: 'Calendario Anual',     sub: 'Vista completa del año' },
+    monthly:     { title: 'Calendario Mensual',   sub: 'Vista mensual detallada' },
+    gantt:       { title: 'Línea de tiempo',      sub: 'Vista Gantt de vacaciones por empleado' },
+    weeklytasks: { title: 'Tareas Semanales',     sub: 'Rotación semanal de tareas de almacén' }
   };
   const m = meta[v] || {};
   const pt = document.getElementById('page-title');
@@ -251,10 +281,13 @@ function showView(v) {
 
   closeSidebar();
 
-  if (v === 'dashboard') renderDashboard();
-  if (v === 'annual')    renderAnnual();
-  if (v === 'monthly')   renderMonthly();
-  if (v === 'gantt')     renderGantt();
+  window._lastActiveView = v;
+
+  if (v === 'dashboard')   renderDashboard();
+  if (v === 'annual')      renderAnnual();
+  if (v === 'monthly')     renderMonthly();
+  if (v === 'gantt')       renderGantt();
+  if (v === 'weeklytasks') renderWeeklyTasks();
 }
 
 // ── SIDEBAR MOBILE ────────────────────────────────────────────
