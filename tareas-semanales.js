@@ -67,12 +67,18 @@ async function renderWeeklyTasks() {
 
 // Disponibilidad de un empleado para la semana mostrada: vacaciones (lun-vie) o baja manual.
 // Los festivos NO descalifican — son de toda la empresa, no una indisponibilidad individual.
+// Vacaciones se puede permitir igual (state.wtAllowVacationAssign, interruptor en
+// "Gestionar participantes") — en ese caso sigue siendo "reason" para mostrar el
+// aviso, pero available:true para no bloquear la celda. La baja manual siempre bloquea.
 function getAvailability(empId) {
   const dates = weekDatesFor(_wtWeekKey);
+  let onVacation = false;
   for (let i = 0; i < 5; i++) { // lunes a viernes
-    if (getDayMarks(dates[i])[empId] === 'V') return { available: false, reason: 'De vacaciones' };
+    if (getDayMarks(dates[i])[empId] === 'V') { onVacation = true; break; }
   }
+  if (onVacation && !state.wtAllowVacationAssign) return { available: false, reason: 'De vacaciones' };
   if (_wtDraftBajas.includes(empId)) return { available: false, reason: 'De baja' };
+  if (onVacation) return { available: true, reason: 'De vacaciones' };
   return { available: true, reason: null };
 }
 
@@ -113,7 +119,7 @@ function renderTaskTable() {
   container.innerHTML = participants.map(emp => {
     const { available, reason } = getAvailability(emp.id);
     const currentTask = taskIndexOf(emp.id);
-    const pill = !available
+    const pill = reason
       ? `<span class="wt-status-pill ${reason === 'De baja' ? 'wt-status-baja' : 'wt-status-vac'}">${reason}</span>`
       : '';
     const bajaActive = _wtDraftBajas.includes(emp.id);
@@ -156,7 +162,10 @@ function onCellClick(empId, taskIndex) {
 }
 
 async function toggleBaja(empId) {
-  if (_wtDraftBajas.includes(empId)) {
+  const wasBaja = _wtDraftBajas.includes(empId);
+  const prevBajas = _wtDraftBajas.slice();
+  const prevAssignments = { ..._wtDraftAssignments };
+  if (wasBaja) {
     _wtDraftBajas = _wtDraftBajas.filter(id => id !== empId);
   } else {
     _wtDraftBajas.push(empId);
@@ -165,7 +174,13 @@ async function toggleBaja(empId) {
       if (_wtDraftAssignments[idx] === empId) delete _wtDraftAssignments[idx];
     });
   }
-  await window.saveBajasDoc(_wtWeekKey, _wtDraftBajas);
+  try {
+    await window.saveBajasDoc(_wtWeekKey, _wtDraftBajas);
+  } catch(e) {
+    _wtDraftBajas = prevBajas;
+    _wtDraftAssignments = prevAssignments;
+    showToast('❌ No se pudo guardar: ' + e.message);
+  }
   renderTaskTable();
 }
 
@@ -176,8 +191,16 @@ function suggestRotation() {
 }
 
 async function saveWeeklyTasks() {
-  await window.saveRotationDoc(_wtWeekKey, _wtDraftAssignments);
-  showToast('✅ Rotación guardada');
+  const btn = document.getElementById('wt-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
+  try {
+    await window.saveRotationDoc(_wtWeekKey, _wtDraftAssignments);
+    showToast('✅ Rotación guardada');
+  } catch(e) {
+    showToast('❌ No se pudo guardar: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
+  }
 }
 
 function openParticipantsConfig() {
@@ -185,13 +208,15 @@ function openParticipantsConfig() {
   if (list) {
     list.innerHTML = state.employees.map(emp => `
       <label class="wt-participant-row">
-        <input type="checkbox" id="wt-part-${emp.id}" ${emp.participatesInRotation ? 'checked' : ''} onchange="onParticipantToggle(${emp.id}, this.checked)">
         <div class="g-emp-avatar" style="width:28px;height:28px;font-size:.7rem;${avatarTintStyle(emp.color)}">${initials(emp.name)}</div>
-        <span>${emp.name}</span>
+        <span class="wt-participant-name">${emp.name}</span>
+        <input type="checkbox" id="wt-part-${emp.id}" ${emp.participatesInRotation ? 'checked' : ''} onchange="onParticipantToggle(${emp.id}, this.checked)">
       </label>`).join('');
   }
   _wtOrderDraft = getOrderedParticipants().map(e => e.id);
   renderOrderList();
+  const allowVac = document.getElementById('wt-allow-vacation-assign');
+  if (allowVac) allowVac.checked = !!state.wtAllowVacationAssign;
   openModal('wt-participants-modal');
 }
 
@@ -239,6 +264,8 @@ function saveParticipantsConfig() {
     const emp = state.employees.find(e => e.id === empId);
     if (emp) emp.rotationOrder = idx;
   });
+  const allowVac = document.getElementById('wt-allow-vacation-assign');
+  if (allowVac) state.wtAllowVacationAssign = allowVac.checked;
   saveState();
   closeModal('wt-participants-modal');
   showToast('✅ Participantes actualizados');
