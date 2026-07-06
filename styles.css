@@ -1008,9 +1008,12 @@ body.base-light .monthly-day.empty { background: rgba(0,0,0,.025); }
     border-radius: 0;
   }
   #view-weeklytasks .panel-card-head { flex-wrap: wrap; gap: 10px; }
-  .wt-table { min-width: 640px; }
-  .wt-cell { width: 90px; }
-  .wt-td-emp { min-width: 160px; }
+  /* Prefijo #view-weeklytasks: la sección Tabla-matriz (más abajo en este
+     archivo) define las reglas base .wt-col-*/.wt-legend con la misma
+     especificidad — sin este prefijo, por orden de aparición en el archivo
+     la base ganaría siempre, sin importar el ancho de pantalla. */
+  #view-weeklytasks .wt-col-emp { width: 160px; }
+  #view-weeklytasks .wt-col-task { width: 90px; }
 }
 
 @media (max-width: 500px) {
@@ -1019,6 +1022,13 @@ body.base-light .monthly-day.empty { background: rgba(0,0,0,.025); }
   .stat-card-head { margin-bottom: 10px; }
   .stat-card .value { font-size: 1.5rem; }
   .header-search { display: none; }
+  #view-weeklytasks .wt-col-emp { width: 128px; }
+  #view-weeklytasks .wt-col-task { width: 28px; }
+  #view-weeklytasks .wt-baja-icon-btn { width: 20px; height: 20px; }
+  #view-weeklytasks .wt-td-emp { padding: 8px 6px; gap: 5px; }
+  #view-weeklytasks .wt-th-full { display: none; }
+  #view-weeklytasks .wt-th-short { display: inline; font-size: 0.9rem; }
+  #view-weeklytasks .wt-legend { display: flex; }
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1272,23 +1282,30 @@ body.base-light .g-cell-wknd { background: rgba(0,0,0,.03); }
   border: 1px solid rgba(251,191,36,.28);
 }
 
-/* Tabla-matriz: operario × tarea */
+/* Tabla-matriz: operario × tarea
+   table-layout:fixed + <colgroup> hacen que el ancho de columna sea estricto —
+   sin esto, el layout automático del navegador infla la columna del operario
+   (contenido flexible: avatar+nombre+rol+botón) mucho más de lo previsto,
+   dejando las columnas de tarea casi por completo fuera de pantalla en móvil. */
 .wt-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.wt-table { width: 100%; border-collapse: collapse; min-width: 720px; }
+.wt-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.wt-col-emp { width: 210px; }
+.wt-col-task { width: 110px; }
 .wt-table thead th {
   text-align: center; font-size: 0.66rem; font-weight: 700; color: var(--muted);
   padding: 10px 6px; border-bottom: 2px solid var(--border); background: var(--surface);
   position: sticky; top: 0; z-index: 4;
 }
 .wt-th-emp { text-align: left; padding-left: 12px; position: sticky; left: 0; z-index: 6; }
+.wt-th-short { display: none; }
 .wt-td-emp {
-  display: flex; align-items: center; gap: 8px; padding: 8px 12px; min-width: 190px;
+  display: flex; align-items: center; gap: 8px; padding: 8px 12px;
   background: var(--surface); border-right: 2px solid var(--border);
-  position: sticky; left: 0; z-index: 3;
+  position: sticky; left: 0; z-index: 3; overflow: hidden;
 }
 .wt-grid-row td:not(.wt-td-emp) { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
 .wt-td-emp { border-bottom: 1px solid var(--border); }
-.wt-cell { width: 110px; height: 52px; text-align: center; cursor: pointer; transition: background .12s; }
+.wt-cell { height: 52px; text-align: center; cursor: pointer; transition: background .12s; }
 .wt-cell:hover { background: var(--surface2); }
 .wt-cell-active { background: var(--accent-dim); }
 .wt-check { color: var(--accent); font-size: 1.1rem; font-weight: 800; }
@@ -1296,6 +1313,12 @@ body.base-light .g-cell-wknd { background: rgba(0,0,0,.03); }
 .wt-cell-disabled:hover { background: transparent; }
 .wt-row-unavailable { opacity: .55; }
 .wt-row-unavailable .wt-cell:hover { background: transparent; }
+
+.wt-legend {
+  display: none; flex-wrap: wrap; gap: 6px 14px;
+  padding: 10px 16px 4px; font-size: 0.72rem; color: var(--muted);
+}
+.wt-legend-item strong { color: var(--accent); margin-right: 3px; }
 
 .wt-baja-icon-btn {
   width: 24px; height: 24px; border-radius: 7px; border: 1px solid var(--border);

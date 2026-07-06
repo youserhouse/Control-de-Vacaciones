@@ -30,12 +30,21 @@ function renderTheadOnce() {
   if (!thead || thead.childElementCount) return; // solo se construye una vez, las tareas son fijas
   thead.innerHTML = `<tr>
     <th class="wt-th-emp">Operario</th>
-    ${WEEKLY_TASKS.map(t => `<th>${t}</th>`).join('')}
+    ${WEEKLY_TASKS.map((t, i) => `<th><span class="wt-th-full">${t}</span><span class="wt-th-short">${i + 1}</span></th>`).join('')}
   </tr>`;
+}
+
+// Referencia "1 = Descarga 1 · 2 = ..." — solo visible en móvil angosto, donde
+// las columnas de tarea muestran el número en vez del nombre completo.
+function renderLegendOnce() {
+  const el = document.getElementById('wt-legend');
+  if (!el || el.childElementCount) return;
+  el.innerHTML = WEEKLY_TASKS.map((t, i) => `<span class="wt-legend-item"><strong>${i + 1}</strong> ${t}</span>`).join('');
 }
 
 async function renderWeeklyTasks() {
   renderTheadOnce();
+  renderLegendOnce();
 
   const titleEl = document.getElementById('wt-week-title');
   const dates = weekDatesFor(_wtWeekKey);
