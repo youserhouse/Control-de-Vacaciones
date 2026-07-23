@@ -9,11 +9,11 @@ const WEEKDAYS_FULL = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes
 const WEEKLY_TASKS = ['Descarga 1', 'Pedir jaulas y recoger cartones almacén', 'Carga/Embalaje', 'Carga y Desc. 2', 'Correo Gefco'];
 
 const DEFAULT_EMPLOYEES = [
-  { id: 1, name: 'Ana',    role: 'Flotante', color: '#e74c3c', totalDays: 28 },
-  { id: 2, name: 'Sara',   role: 'Flotante', color: '#3498db', totalDays: 28 },
-  { id: 3, name: 'Samuel', role: 'Flotante', color: '#2ecc71', totalDays: 28 },
-  { id: 4, name: 'José',   role: 'Flotante', color: '#f39c12', totalDays: 28 },
-  { id: 5, name: 'Dani',   role: 'Flotante', color: '#9b59b6', totalDays: 28 },
+  { id: 1, name: 'Ana',    role: 'Flotante', color: '#e74c3c', totalDays: 28, email: '' },
+  { id: 2, name: 'Sara',   role: 'Flotante', color: '#3498db', totalDays: 28, email: '' },
+  { id: 3, name: 'Samuel', role: 'Flotante', color: '#2ecc71', totalDays: 28, email: '' },
+  { id: 4, name: 'José',   role: 'Flotante', color: '#f39c12', totalDays: 28, email: '' },
+  { id: 5, name: 'Dani',   role: 'Flotante', color: '#9b59b6', totalDays: 28, email: '' },
 ];
 
 let state = loadState();
@@ -31,6 +31,7 @@ function loadState() {
       if (!p.compatibleRoles) p.compatibleRoles = [['Encargado','Piker']];
       if (typeof p.wtAllowVacationAssign !== 'boolean') p.wtAllowVacationAssign = false;
       p.employees.forEach(e => { if (!e.birthday) e.birthday = ''; });
+      p.employees.forEach(e => { if (!e.email) e.email = ''; }); // vínculo correo↔empleado (perfiles por usuario)
       p.employees.forEach(e => { if (e.participatesInRotation === undefined) e.participatesInRotation = false; });
       let _nextRotOrder = 1 + p.employees.reduce((max, e) =>
         (e.participatesInRotation && typeof e.rotationOrder === 'number') ? Math.max(max, e.rotationOrder) : max, -1);
@@ -264,6 +265,10 @@ function applyTheme() {
 
 // ── VIEWS ─────────────────────────────────────────────────────
 function showView(v) {
+  // El dashboard "Resumen" es solo para administradores; un usuario limitado
+  // que intente llegar ahí (nav oculto, enlace directo) va al Anual.
+  if (v === 'dashboard' && window.currentUser && window.isAdmin === false) v = 'annual';
+
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.nav-item[id^="nav-"]').forEach(el => el.classList.remove('active'));

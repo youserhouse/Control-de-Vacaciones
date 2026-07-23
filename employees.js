@@ -48,6 +48,7 @@ function openAddEmployee() {
   document.getElementById('emp-name').value='';
   document.getElementById('emp-days').value='28';
   document.getElementById('emp-birthday').value='';
+  document.getElementById('emp-email').value='';
   document.getElementById('emp-role-custom').style.display='none';
   document.getElementById('emp-role-custom').value='';
   buildRoleSelect('Encargado');
@@ -65,6 +66,7 @@ function openEditEmployee(id) {
   document.getElementById('emp-name').value=emp.name;
   document.getElementById('emp-days').value=emp.totalDays;
   document.getElementById('emp-birthday').value=emp.birthday||'';
+  document.getElementById('emp-email').value=emp.email||'';
   document.getElementById('emp-role-custom').style.display='none';
   document.getElementById('emp-role-custom').value='';
   buildRoleSelect(emp.role||'Encargado');
@@ -92,12 +94,13 @@ function saveEmployee() {
   }
 
   const birthday = document.getElementById('emp-birthday').value || '';
+  const email = (document.getElementById('emp-email').value || '').trim();
 
   if(editingEmpId){
     const emp=state.employees.find(e=>e.id===editingEmpId);
-    if(emp){ emp.name=name; emp.role=role; emp.totalDays=days; emp.color=state.selectedColor; emp.birthday=birthday; }
+    if(emp){ emp.name=name; emp.role=role; emp.totalDays=days; emp.color=state.selectedColor; emp.birthday=birthday; emp.email=email; }
   } else {
-    state.employees.push({id:state.nextId++,name,role,color:state.selectedColor,totalDays:days,birthday});
+    state.employees.push({id:state.nextId++,name,role,color:state.selectedColor,totalDays:days,birthday,email});
   }
   saveState(); closeModal('emp-modal');
   showToast(editingEmpId?'✅ Empleado actualizado':'✅ Empleado añadido');
