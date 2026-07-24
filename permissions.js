@@ -93,6 +93,20 @@ function countWorkedDays(empId, year) {
 }
 window.countWorkedDays = countWorkedDays;
 
+// Días que faltan para el próximo día marcado como vacaciones ('V') a partir de
+// hoy (hoy inclusive = 0), o null si no tiene ninguna vacación programada.
+function daysUntilNextVacation(empId) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const keys = Object.keys(state.marks).filter(k => state.marks[k][empId] === 'V').sort();
+  for (const k of keys) {
+    const [y, m, d] = k.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    if (dt >= today) return Math.round((dt - today) / 86400000);
+  }
+  return null;
+}
+window.daysUntilNextVacation = daysUntilNextVacation;
+
 // Nombre de la tarea asignada al empleado en la semana actual, o null.
 async function getWeekTaskName(empId) {
   const weekKey = weekKeyFor(new Date());
@@ -132,19 +146,25 @@ function showWelcome() {
 
   const y = state.currentYear;
   const worked = countWorkedDays(emp.id, y);
-  const remaining = emp.totalDays - countVacDays(emp.id, y);
+  const nextIn = daysUntilNextVacation(emp.id);
+  const remainingDays = emp.totalDays - countVacDays(emp.id, y);
 
-  const stat = (val, label, color) => `
-    <div style="flex:1;min-width:120px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;">
-      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.7rem;color:${color};line-height:1;">${val}</div>
-      <div style="font-size:.72rem;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:.03em;">${label}</div>
+  // Reutiliza las clases .stat-card/.value/.label de las tarjetas KPI de
+  // "Resumen" (calendar.js renderStatsBar / styles.css) para que el tamaño y
+  // la tipografía coincidan exactamente con el resto de la app, en vez de un
+  // estilo propio del popup.
+  const statCard = (val, label, suffix, color) => `
+    <div class="stat-card" style="padding:12px 10px;">
+      <div class="value"${color ? ` style="color:${color};"` : ''}>${val}${suffix ? `<span class="value-suffix">${suffix}</span>` : ''}</div>
+      <div class="label">${label}</div>
     </div>`;
 
   titleEl.textContent = `👋 Hola, ${emp.name}`;
   body.innerHTML = `
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
-      ${stat(worked, 'Días trabajados', 'var(--text)')}
-      ${stat(remaining, 'Vacaciones restantes', '#4ade80')}
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
+      ${statCard(worked, 'Días trabajados')}
+      ${statCard(nextIn === null ? '—' : nextIn, 'Próxima vacaciones en', nextIn === null ? '' : 'd', 'var(--accent)')}
+      ${statCard(remainingDays, 'Vacaciones restantes', 'd', '#4ade80')}
     </div>
     <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px;">
       <div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px;">Tarea de esta semana</div>
