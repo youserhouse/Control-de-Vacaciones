@@ -522,6 +522,19 @@ main { padding: 26px 28px; flex: 1; }
 .panel-card-title { font-size: 0.95rem; font-weight: 700; color: var(--text); }
 .panel-card-sub { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
 
+/* Flecha de los desplegables de Resumen (Equipo/Próximas vacaciones/Festivos)
+   — el toggle solo tiene efecto visual en móvil, ver @media (max-width:900px)
+   arriba; en escritorio la flecha ni se muestra. */
+.panel-chevron { width: 18px; height: 18px; flex-shrink: 0; color: var(--muted); transition: transform .2s; }
+@media (min-width: 901px) {
+  .panel-chevron { display: none; }
+}
+@media (max-width: 900px) {
+  .panel-card-head { cursor: pointer; }
+  .panel-collapsed .panel-chevron { transform: rotate(-90deg); }
+  .panel-collapsed .panel-card-body { display: none; }
+}
+
 /* ── EQUIPO LIST (dashboard) ───────────────────────────────── */
 .team-list { display: flex; flex-direction: column; }
 .team-row { padding: 13px 0; border-top: 1px solid var(--border); cursor: pointer; }

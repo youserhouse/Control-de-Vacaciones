@@ -92,6 +92,21 @@ function renderDashboard() {
   renderTeamList();
   renderUpcomingPanel();
   renderFestivosPanel();
+  resetDashPanels();
+}
+
+// Desplegables de Resumen (Equipo/Próximas vacaciones/Festivos) — el colapso
+// solo tiene efecto en móvil (ver .panel-collapsed en styles.css), pero el
+// estado por defecto se fija siempre, en cualquier tamaño de pantalla: Equipo
+// abierto, los otros dos cerrados, cada vez que se entra a la sección.
+function resetDashPanels() {
+  document.getElementById('panel-equipo')?.classList.remove('panel-collapsed');
+  document.getElementById('panel-proximas')?.classList.add('panel-collapsed');
+  document.getElementById('panel-festivos')?.classList.add('panel-collapsed');
+}
+
+function toggleDashPanel(id) {
+  document.getElementById(id)?.classList.toggle('panel-collapsed');
 }
 
 function renderStatsBar() {
