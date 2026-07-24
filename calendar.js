@@ -165,8 +165,9 @@ function renderTeamList() {
     const restantes = emp.totalDays - totalMarked;
     const pct = Math.min(100, Math.round((pastUsed/emp.totalDays)*100));
     const onVacation = getDayMarks(todayKey())[emp.id] === 'V';
+    const rowClick = (window.isAdmin === false) ? '' : ` onclick="openEditEmployee(${emp.id})"`;
     return `
-    <div class="team-row" onclick="openEditEmployee(${emp.id})">
+    <div class="team-row"${rowClick}>
       <div class="team-head">
         <div class="team-avatar" style="${avatarTintStyle(emp.color)}">${initials(emp.name)}</div>
         <div class="team-name-wrap">
@@ -452,13 +453,21 @@ function openDayModal(key) {
   const chkF=document.getElementById('chk-festivo');
   chkF.checked=festivo;
   document.getElementById('festivo-toggle').classList.toggle('active',festivo);
+  // El toggle de festivo es solo para administradores
+  document.getElementById('festivo-toggle').style.display = (window.isAdmin === false) ? 'none' : '';
+  // Un usuario limitado solo puede editar SU propia fila; ve las demás en solo lectura.
+  const canEdit = (empId) => window.isAdmin !== false || (window.currentEmployee && window.currentEmployee.id === empId);
   document.getElementById('day-modal-emps').innerHTML=state.employees.map(emp=>{
     const marked=marks[emp.id], type=marked||'V';
-    return `<div class="day-emp-row ${marked?'selected':''}" id="row-${emp.id}" onclick="toggleDayRow(${emp.id})">
-      <input type="checkbox" id="chk-${emp.id}" ${marked?'checked':''} onclick="event.stopPropagation();toggleDayRow(${emp.id})">
+    const editable=canEdit(emp.id);
+    const ro=editable?'':'disabled';
+    const rowClick=editable?` onclick="toggleDayRow(${emp.id})"`:'';
+    const chkClick=editable?`onclick="event.stopPropagation();toggleDayRow(${emp.id})"`:'onclick="event.stopPropagation()"';
+    return `<div class="day-emp-row ${marked?'selected':''}" id="row-${emp.id}"${rowClick} style="${editable?'':'opacity:.55'}">
+      <input type="checkbox" id="chk-${emp.id}" ${marked?'checked':''} ${ro} ${chkClick}>
       <div class="emp-dot-sm" style="background:${emp.color}"></div>
       <span style="font-size:.83rem;font-weight:600">${emp.name}</span>
-      <select class="day-emp-type" id="type-${emp.id}" onclick="event.stopPropagation()">
+      <select class="day-emp-type" id="type-${emp.id}" ${ro} onclick="event.stopPropagation()">
         <option value="V" ${type==='V'?'selected':''}>Vacaciones</option>
         <option value="O" ${type==='O'?'selected':''}>Otros</option>
       </select>
@@ -480,19 +489,37 @@ function toggleDayRow(empId) {
 }
 
 function saveDayMarks() {
-  if(document.getElementById('chk-festivo').checked) state.festivos[currentDayKey]=true;
-  else delete state.festivos[currentDayKey];
-  const marks={};
-  state.employees.forEach(emp=>{
-    const chk=document.getElementById('chk-'+emp.id);
-    const type=document.getElementById('type-'+emp.id).value;
-    if(chk&&chk.checked) marks[emp.id]=type;
-  });
+  const isUser = window.isAdmin === false;
+  // El festivo solo lo cambia un administrador
+  if(!isUser){
+    if(document.getElementById('chk-festivo').checked) state.festivos[currentDayKey]=true;
+    else delete state.festivos[currentDayKey];
+  }
+  let marks;
+  if(isUser){
+    // Usuario limitado: parte de las marcas existentes y toca SOLO su fila —
+    // así no borra las vacaciones de los demás (el doc se guarda entero).
+    marks={...getDayMarks(currentDayKey)};
+    const emp=window.currentEmployee;
+    if(emp){
+      const chk=document.getElementById('chk-'+emp.id);
+      const typeEl=document.getElementById('type-'+emp.id);
+      if(chk&&chk.checked&&typeEl) marks[emp.id]=typeEl.value;
+      else delete marks[emp.id];
+    }
+  } else {
+    marks={};
+    state.employees.forEach(emp=>{
+      const chk=document.getElementById('chk-'+emp.id);
+      const typeEl=document.getElementById('type-'+emp.id);
+      if(chk&&chk.checked&&typeEl) marks[emp.id]=typeEl.value;
+    });
+  }
   if(Object.keys(marks).length) state.marks[currentDayKey]=marks;
   else delete state.marks[currentDayKey];
   saveState();
   closeModal('day-modal');
   showToast('✅ Guardado');
   const idx=[...document.querySelectorAll('.tab-btn')].findIndex(b=>b.classList.contains('active'));
-  showView(['dashboard','annual','monthly'][idx]);
+  showView(['dashboard','annual','monthly'][idx] || window._lastActiveView || 'annual');
 }

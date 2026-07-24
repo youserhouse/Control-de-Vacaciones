@@ -113,9 +113,12 @@ window.saveBajasDoc = saveBajasDoc;
 // ── AUTH ──────────────────────────────────────────────────────
 function logoutUser() { auth.signOut(); }
 
-auth.onAuthStateChanged(user => {
+auth.onAuthStateChanged(async user => {
   if (user) {
     window.currentUser = user;
+    // Carga la lista de administradores (config/access.admins) antes de sincronizar,
+    // para que resolvePermissions() ya sepa el rol cuando el estado esté cargado.
+    if (window.readAccessConfig) await window.readAccessConfig();
     const email = user.email || '';
     const namePart = email.split('@')[0] || 'Usuario';
     const displayName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
@@ -189,6 +192,13 @@ function mergeRemoteState(remote) {
   setTimeout(() => { isSyncing = false; }, 500);
 }
 
+// Resuelve rol + empleado vinculado y aplica el gateo de UI (permissions.js).
+// Se llama tras cada carga/merge del estado, cuando state.employees ya existe.
+function applyPerms() {
+  if (window.resolvePermissions) window.resolvePermissions();
+  if (window.applyPermissions) window.applyPermissions();
+}
+
 async function startSync() {
   showSync('Conectando...');
   diagMsg('🔄 Conectando a Firestore...', '#f5a623');
@@ -196,11 +206,13 @@ async function startSync() {
     const snap = await DOC_REF.get();
     if (snap.exists) {
       mergeRemoteState(snap.data());
+      applyPerms();
       if (window.showView) {
         window.showView(window._lastActiveView || 'dashboard');
       }
       diagMsg('✅ Datos cargados', '#4ade80');
     } else {
+      applyPerms();
       diagMsg('✅ Conectado — base de datos vacía', '#4ade80');
     }
     hideSync();
@@ -216,6 +228,7 @@ async function startSync() {
   DOC_REF.onSnapshot(snap => {
     if (!snap.exists || isSyncing) return;
     mergeRemoteState(snap.data());
+    applyPerms();
     if (window.showView) {
       window.showView(window._lastActiveView || 'dashboard');
     }

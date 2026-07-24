@@ -111,9 +111,9 @@
       <span>Tareas Semanales</span>
     </button>
 
-    <div class="nav-section-label" style="margin-top:10px;">Acciones</div>
+    <div class="nav-section-label" style="margin-top:10px;" id="nav-section-acciones">Acciones</div>
 
-    <button class="nav-item" onclick="openAddEmployee()">
+    <button class="nav-item" id="nav-add-emp" onclick="openAddEmployee()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
         <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/>
         <circle cx="9" cy="7" r="4"/>
@@ -123,7 +123,7 @@
       <span>Añadir empleado</span>
     </button>
 
-    <button class="nav-item" onclick="openSettings()">
+    <button class="nav-item" id="nav-settings" onclick="openSettings()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="3"/>
         <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
@@ -156,6 +156,12 @@
         <div class="user-card-name" id="user-card-name">Usuario</div>
         <div class="user-card-email" id="user-card-email"></div>
       </div>
+      <button class="user-card-logout" onclick="showWelcome()" title="Mi resumen" style="margin-right:2px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M4 21v-1a6 6 0 016-6h4a6 6 0 016 6v1"/>
+        </svg>
+      </button>
       <button class="user-card-logout" onclick="logoutUser()" title="Cerrar sesión">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
@@ -177,7 +183,7 @@
   <header>
     <div class="header-right">
       <div class="tabs">
-        <button class="tab-btn active" onclick="showView('dashboard')">Resumen</button>
+        <button class="tab-btn active js-admin-only" onclick="showView('dashboard')">Resumen</button>
         <button class="tab-btn" onclick="showView('annual')">Anual</button>
         <button class="tab-btn" onclick="showView('monthly')">Mensual</button>
       </div>
@@ -204,12 +210,12 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" placeholder="Buscar empleado..." oninput="onDashSearchInput(this.value)">
       </div>
-      <button class="btn btn-green" onclick="openAddEmployee()">+ Empleado</button>
+      <button class="btn btn-green js-admin-only" onclick="openAddEmployee()">+ Empleado</button>
       <button class="btn btn-ghost" onclick="openPdfModal()">⬇ Exportar</button>
     </div>
     <div class="header-actions" id="header-actions-other" style="display:none;">
-      <button class="btn btn-ghost" onclick="openImportModal()">⬆ Importar</button>
-      <button class="btn btn-accent" onclick="openAddEmployee()">+ Empleado</button>
+      <button class="btn btn-ghost js-admin-only" onclick="openImportModal()">⬆ Importar</button>
+      <button class="btn btn-accent js-admin-only" onclick="openAddEmployee()">+ Empleado</button>
     </div>
   </div>
 
@@ -227,7 +233,7 @@
               <div class="panel-card-title">Equipo</div>
               <div class="panel-card-sub" id="team-list-sub"></div>
             </div>
-            <button class="btn" style="background:rgba(74,222,128,.13);color:#4ade80;" onclick="openAddEmployee()">+ Añadir</button>
+            <button class="btn js-admin-only" style="background:rgba(74,222,128,.13);color:#4ade80;" onclick="openAddEmployee()">+ Añadir</button>
           </div>
           <div class="team-list" id="team-list"></div>
         </div>
@@ -494,6 +500,11 @@
       <div style="font-size:.72rem;color:var(--muted);margin-top:4px;">Se mostrará cada año en el calendario</div>
     </div>
     <div class="form-group">
+      <label>Correo de acceso ✉️</label>
+      <input type="email" id="emp-email" placeholder="Ej: maria@empresa.com" autocomplete="off">
+      <div style="font-size:.72rem;color:var(--muted);margin-top:4px;">Vincula este empleado con su cuenta. Debe coincidir con el correo con el que inicia sesión.</div>
+    </div>
+    <div class="form-group">
       <label>Color</label>
       <div class="color-picker-row" id="color-picker"></div>
     </div>
@@ -519,6 +530,17 @@
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('day-modal')">Cancelar</button>
       <button class="btn btn-accent" onclick="saveDayMarks()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Welcome / Mi resumen Modal -->
+<div class="overlay" id="welcome-modal">
+  <div class="modal">
+    <h3 id="welcome-title">👋 Bienvenido/a</h3>
+    <div id="welcome-body" style="margin:14px 0;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-accent" onclick="closeModal('welcome-modal')">Entendido</button>
     </div>
   </div>
 </div>
@@ -662,6 +684,7 @@
 <script src="export-import.js"></script>
 <script src="gantt.js"></script>
 <script src="tareas-semanales.js"></script>
+<script src="permissions.js"></script>
 
 <!-- ── Init ── -->
 <script>
