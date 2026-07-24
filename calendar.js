@@ -395,20 +395,23 @@ function changeYear(delta) {
 }
 
 // ── MONTHLY ───────────────────────────────────────────────────
-function initMonthlySelects() {
-  const ms=document.getElementById('month-select'), ys=document.getElementById('year-select-monthly');
-  if(!ms.options.length){
-    MONTHS.forEach((m,i)=>ms.add(new Option(m,i)));
-    for(let y=2024;y<=2030;y++) ys.add(new Option(y,y));
-    ms.value=new Date().getMonth(); ys.value=state.currentYear;
-  }
+// Navegación mes a mes con flechas ‹ › — mismo patrón que Gantt (gantt.js
+// _gMonth/_gYear + changeGanttMonth), en vez de los <select> de mes/año.
+let _moMonth = new Date().getMonth();
+let _moYear  = new Date().getFullYear();
+
+function changeMonthlyMonth(delta) {
+  _moMonth += delta;
+  if (_moMonth < 0)  { _moMonth = 11; _moYear--; }
+  if (_moMonth > 11) { _moMonth = 0;  _moYear++; }
+  renderMonthly();
 }
 
 function renderMonthly() {
-  initMonthlySelects();
   renderEmpFilterSelect('monthly-filter-select');
-  const m=parseInt(document.getElementById('month-select').value);
-  const y=parseInt(document.getElementById('year-select-monthly').value);
+  const m=_moMonth, y=_moYear;
+  const titleEl=document.getElementById('monthly-title');
+  if(titleEl) titleEl.textContent=`${MONTHS[m]} ${y}`;
   const conflictKeys = new Set(getConflictDays(y).map(c=>c.key));
   const days=daysInMonth(y,m), first=firstDayOfMonth(y,m);
   let html=`<div class="monthly-header">`;

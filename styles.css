@@ -403,8 +403,6 @@ main { padding: 26px 28px; flex: 1; }
 .btn-pdf:hover { background: #166534; }
 .btn-import { background: #1e3a5f; color: #93c5fd; border: 1px solid #1e40af; }
 .btn-import:hover { background: #1d4ed8; color: #fff; }
-.btn-green { background: #3fae5f; color: #fff; }
-.btn-green:hover { filter: brightness(1.08); }
 .btn:disabled { opacity: .6; cursor: not-allowed; filter: none; }
 
 /* ── HEADER SEARCH ──────────────────────────────────────────── */
@@ -700,13 +698,6 @@ main { padding: 26px 28px; flex: 1; }
 .day-dot { width: 4px; height: 4px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,.3); }
 
 /* ── MONTHLY CALENDAR ───────────────────────────────────────── */
-.month-selector { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
-.month-selector select {
-  background: var(--surface); border: 1px solid var(--border);
-  color: var(--text); padding: 9px 14px;
-  border-radius: 9px; font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-  font-size: 0.88rem; cursor: pointer; outline: none;
-}
 .monthly-calendar {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 16px; overflow: hidden;

@@ -210,7 +210,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" placeholder="Buscar empleado..." oninput="onDashSearchInput(this.value)">
       </div>
-      <button class="btn btn-green js-admin-only" onclick="openAddEmployee()">+ Empleado</button>
+      <button class="btn btn-accent js-admin-only" onclick="openAddEmployee()">+ Empleado</button>
       <button class="btn btn-ghost" onclick="openPdfModal()">⬇ Exportar</button>
     </div>
     <div class="header-actions" id="header-actions-other" style="display:none;">
@@ -272,9 +272,10 @@
     <!-- MONTHLY -->
     <div class="view" id="view-monthly">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
-        <div class="month-selector">
-          <select id="month-select" onchange="renderMonthly()"></select>
-          <select id="year-select-monthly" onchange="renderMonthly()"></select>
+        <div class="year-nav">
+          <button onclick="changeMonthlyMonth(-1)">‹</button>
+          <h2 id="monthly-title">Julio 2026</h2>
+          <button onclick="changeMonthlyMonth(1)">›</button>
         </div>
         <div class="emp-filter-pill" id="monthly-filter-select"></div>
       </div>
@@ -694,7 +695,6 @@ window.applyTheme = applyTheme;
 window.setTheme = setTheme;
 
 applyTheme();
-initMonthlySelects();
 renderDashboard();
 
 // SERVICE WORKER
