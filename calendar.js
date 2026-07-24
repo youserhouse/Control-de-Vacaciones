@@ -160,9 +160,11 @@ function renderTeamList() {
   }
 
   container.innerHTML = emps.map(emp => {
-    const totalMarked = countVacDays(emp.id, y);
     const pastUsed = countPastVacDays(emp.id, y);
-    const restantes = emp.totalDays - totalMarked;
+    // "Restantes" = vacaciones aún no disfrutadas (no "sin agendar") — un día
+    // ya marcado a futuro sigue sin disfrutarse. Misma definición que el popup
+    // de bienvenida (permissions.js showWelcome()).
+    const restantes = emp.totalDays - pastUsed;
     const pct = Math.min(100, Math.round((pastUsed/emp.totalDays)*100));
     const onVacation = getDayMarks(todayKey())[emp.id] === 'V';
     const rowClick = (window.isAdmin === false) ? '' : ` onclick="openEditEmployee(${emp.id})"`;
