@@ -499,14 +499,15 @@ main { padding: 26px 28px; flex: 1; }
 }
 @media (max-width: 900px) {
   .dash-grid { grid-template-columns: 1fr; }
-  /* En móvil, "Próximas vacaciones" y "Festivos" van primero: son más
-     cortos y así se ven sin bajar por toda la lista de Equipo. Punto
-     de corte a 900px (no 1000px) para dejar margen frente al ancho
-     virtual que usan los navegadores en modo "Sitio de escritorio"
-     (normalmente 980–1024px) — con eso activado debe verse el layout
-     de escritorio de 2 columnas tal cual, no el apilado móvil. */
-  .dash-col-side { order: 1; }
-  .dash-col-team { order: 2; }
+  /* En móvil, "Equipo" va primero (con los tres paneles ahora colapsables,
+     ver .panel-collapsed, subir a toda su lista ya no cuesta scroll salvo
+     que el usuario lo expanda). Punto de corte a 900px (no 1000px) para
+     dejar margen frente al ancho virtual que usan los navegadores en modo
+     "Sitio de escritorio" (normalmente 980–1024px) — con eso activado debe
+     verse el layout de escritorio de 2 columnas tal cual, no el apilado
+     móvil. */
+  .dash-col-team { order: 1; }
+  .dash-col-side { order: 2; }
 }
 
 .panel-card {
@@ -521,6 +522,19 @@ main { padding: 26px 28px; flex: 1; }
 }
 .panel-card-title { font-size: 0.95rem; font-weight: 700; color: var(--text); }
 .panel-card-sub { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+
+/* Flecha de los desplegables de Resumen (Equipo/Próximas vacaciones/Festivos)
+   — el toggle solo tiene efecto visual en móvil, ver @media (max-width:900px)
+   arriba; en escritorio la flecha ni se muestra. */
+.panel-chevron { width: 18px; height: 18px; flex-shrink: 0; color: var(--muted); transition: transform .2s; }
+@media (min-width: 901px) {
+  .panel-chevron { display: none; }
+}
+@media (max-width: 900px) {
+  .panel-card-head { cursor: pointer; }
+  .panel-collapsed .panel-chevron { transform: rotate(-90deg); }
+  .panel-collapsed .panel-card-body { display: none; }
+}
 
 /* ── EQUIPO LIST (dashboard) ───────────────────────────────── */
 .team-list { display: flex; flex-direction: column; }

@@ -227,29 +227,38 @@
       <div class="stats-bar" id="stats-bar"></div>
 
       <div class="dash-grid">
-        <div class="panel-card dash-col-team">
-          <div class="panel-card-head">
+        <div class="panel-card dash-col-team" id="panel-equipo">
+          <div class="panel-card-head" onclick="toggleDashPanel('panel-equipo')">
             <div>
               <div class="panel-card-title">Equipo</div>
               <div class="panel-card-sub" id="team-list-sub"></div>
             </div>
-            <button class="btn js-admin-only" style="background:rgba(74,222,128,.13);color:#4ade80;" onclick="openAddEmployee()">+ Añadir</button>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <button class="btn js-admin-only" style="background:rgba(74,222,128,.13);color:#4ade80;" onclick="event.stopPropagation();openAddEmployee()">+ Añadir</button>
+              <svg class="panel-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
           </div>
-          <div class="team-list" id="team-list"></div>
+          <div class="panel-card-body team-list" id="team-list"></div>
         </div>
 
         <div class="dash-col-side" style="display:flex;flex-direction:column;gap:16px;">
-          <div class="panel-card">
-            <div class="panel-card-title" style="margin-bottom:12px;">Próximas vacaciones</div>
-            <div id="upcoming-list"></div>
+          <div class="panel-card" id="panel-proximas">
+            <div class="panel-card-head" onclick="toggleDashPanel('panel-proximas')">
+              <div class="panel-card-title">Próximas vacaciones</div>
+              <svg class="panel-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="panel-card-body" id="upcoming-list"></div>
           </div>
 
-          <div class="panel-card">
-            <div class="panel-card-head">
+          <div class="panel-card" id="panel-festivos">
+            <div class="panel-card-head" onclick="toggleDashPanel('panel-festivos')">
               <div class="panel-card-title">Festivos <span id="festivos-year-label" style="color:var(--muted);font-weight:600;"></span></div>
-              <button class="btn btn-ghost" style="padding:6px 12px;font-size:.76rem;" onclick="openFestivosExcelModal()">⬇ Importar</button>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <button class="btn btn-ghost" style="padding:6px 12px;font-size:.76rem;" onclick="event.stopPropagation();openFestivosExcelModal()">⬇ Importar</button>
+                <svg class="panel-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
             </div>
-            <div id="festivos-list"></div>
+            <div class="panel-card-body" id="festivos-list"></div>
           </div>
         </div>
       </div>
