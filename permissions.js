@@ -147,7 +147,9 @@ function showWelcome() {
   const y = state.currentYear;
   const worked = countWorkedDays(emp.id, y);
   const nextIn = daysUntilNextVacation(emp.id);
-  const remainingDays = emp.totalDays - countVacDays(emp.id, y);
+  // "Restantes" = vacaciones aún no disfrutadas (todo lo que no sea pasado),
+  // no "sin agendar" — un día ya marcado a futuro sigue sin disfrutarse.
+  const remainingDays = emp.totalDays - countPastVacDays(emp.id, y);
 
   // Reutiliza las clases .stat-card/.value/.label de las tarjetas KPI de
   // "Resumen" (calendar.js renderStatsBar / styles.css) para que el tamaño y
