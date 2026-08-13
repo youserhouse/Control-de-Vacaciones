@@ -427,10 +427,11 @@
 
     <div id="import-step-3" style="display:none;">
       <div id="import-emp-matching"></div>
+      <div class="quota-banner" id="import-quota-error" style="display:none;"></div>
       <div class="import-preview" id="import-preview"></div>
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="resetImport()">← Volver</button>
-        <button class="btn btn-accent" onclick="confirmImport()">✅ Importar al calendario</button>
+        <button class="btn btn-accent" id="import-confirm-btn" onclick="confirmImport()">✅ Importar al calendario</button>
       </div>
     </div>
 
@@ -537,6 +538,7 @@
     </div>
     <div class="day-section-label">Empleados de vacaciones</div>
     <div class="day-modal-emps" id="day-modal-emps"></div>
+    <div class="quota-banner" id="day-quota-banner" style="display:none;"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('day-modal')">Cancelar</button>
       <button class="btn btn-accent" onclick="saveDayMarks()">Guardar</button>

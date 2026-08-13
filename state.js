@@ -156,6 +156,78 @@ function countVacDays(empId, year) {
   return count;
 }
 
+// ── CUPO ANUAL DE VACACIONES ────────────────────────────────
+// Bloqueo duro: nadie puede marcar más días 'V' en un año que su cupo (totalDays).
+// Los días 'O' (otros) no consumen cupo.
+
+// Devuelve `singular` o `plural` según n (no existía un helper de plurales en el proyecto)
+function plural(n, singular, plural) { return n === 1 ? singular : plural; }
+
+// Resumen de cupo de un empleado en un año concreto.
+// `left` PUEDE ser negativo (datos heredados por encima del cupo); quien lo pinta decide si lo recorta.
+function getVacQuota(empId, year) {
+  const id = Number(empId);
+  const emp = state.employees.find(e => e.id === id);
+  const t = Number(emp && emp.totalDays);
+  const totalDays = (Number.isFinite(t) && t >= 0) ? t : 0;
+  const used = countVacDays(id, year);
+  return { emp, name: emp ? emp.name : ('#' + empId), totalDays, used, left: totalDays - used };
+}
+
+// ¿Se puede poner/dejar a este empleado como 'V' en este día?
+function canMarkVacation(empId, dateKey) {
+  // Si ese día ya es 'V', mantenerlo o quitarlo siempre se permite —
+  // así nadie con datos heredados por encima del cupo queda bloqueado sin salida.
+  if (getDayMarks(dateKey)[empId] === 'V') return true;
+  return getVacQuota(empId, dateKey.slice(0,4)).left > 0;
+}
+
+/**
+ * Valida un conjunto de marcas que quedarían como 'V' tras una operación.
+ * @param {Array<{empId:number|string, date:string}>} proposals - TODAS las marcas 'V' resultantes.
+ * @returns {Array<{empId:number, name:string, year:string, totalDays:number, used:number, added:number, over:number}>}
+ *          Array vacío = todo cabe dentro del cupo.
+ */
+function validateVacProposals(proposals) {
+  const seen = new Set();
+  const counts = {}; // "empId|year" -> nuevos días propuestos
+  for (const p of (proposals || [])) {
+    const empId = Number(p && p.empId);
+    if (!Number.isFinite(empId)) continue;
+    const date = p && p.date;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) continue;
+    const pairKey = `${empId}|${date}`;
+    if (seen.has(pairKey)) continue; // el mismo empleado/día puede llegar duplicado
+    seen.add(pairKey);
+    // Si ya era 'V' no es consumo NUEVO (re-guardar un día sin cambios no gasta cupo).
+    if ((state.marks[date] || {})[empId] === 'V') continue;
+    const gk = empId + '|' + date.slice(0,4); // por año: cada año se valida contra su propio cupo
+    counts[gk] = (counts[gk] || 0) + 1;
+  }
+  const out = [];
+  for (const [gk, added] of Object.entries(counts)) {
+    const [idStr, year] = gk.split('|');
+    const empId = Number(idStr);
+    const q = getVacQuota(empId, year);
+    if (!q.emp) continue; // marca huérfana de un empleado borrado: no tiene sentido bloquear por ella
+    if (q.used + added > q.totalDays) {
+      out.push({ empId, name: q.name, year, totalDays: q.totalDays, used: q.used, added, over: q.used + added - q.totalDays });
+    }
+  }
+  out.sort((a,b) => a.name.localeCompare(b.name) || a.year.localeCompare(b.year));
+  return out;
+}
+
+// Convierte las violaciones en líneas de texto plano (los llamadores las pintan con textContent)
+function vacQuotaLines(violations) {
+  return (violations || []).map(v =>
+    `${v.name}: cupo de ${v.totalDays} ${plural(v.totalDays,'día','días')} en ${v.year}, ` +
+    `ya tiene ${v.used} ${plural(v.used,'marcado','marcados')}. ` +
+    `${plural(v.added,'Se intenta','Se intentan')} añadir ${v.added} ${plural(v.added,'día','días')} más ` +
+    `(excede en ${v.over}).`
+  );
+}
+
 function countPastVacDays(empId, year) {
   const today = new Date(); today.setHours(0,0,0,0);
   let count = 0;
