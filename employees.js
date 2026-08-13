@@ -81,6 +81,18 @@ function saveEmployee() {
   const days=parseInt(document.getElementById('emp-days').value)||28;
   if(!name){ showToast('❌ El nombre es obligatorio'); return; }
 
+  // Bajar el cupo por debajo de los días ya marcados dejaría al empleado
+  // pasado de cupo por la puerta de atrás: se bloquea igual que en el calendario.
+  // (Sólo al editar: un empleado nuevo aún no tiene días marcados.)
+  if(editingEmpId){
+    const y = state.currentYear;
+    const yaMarcados = countVacDays(editingEmpId, y);
+    if (days < yaMarcados) {
+      showToast(`⚠️ ${name}: ${yaMarcados} días marcados en ${y}. Libera ${yaMarcados - days} para bajar el cupo a ${days}.`);
+      return;   // no guarda nada
+    }
+  }
+
   const customInp = document.getElementById('emp-role-custom');
   let role;
   if (customInp.style.display !== 'none' && customInp.value.trim()) {
