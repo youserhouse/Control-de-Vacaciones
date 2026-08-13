@@ -796,6 +796,25 @@ body.base-light .monthly-day.empty { background: rgba(0,0,0,.025); }
 }
 .conflict-banner strong { color: var(--accent); }
 
+/* ── CUPO ANUAL DE VACACIONES ─────── */
+.quota-banner {
+  display: flex; align-items: flex-start; gap: 8px;
+  background: rgba(248,113,113,.07); border: 1px solid rgba(248,113,113,.28);
+  border-radius: 11px; padding: 10px 15px; margin-bottom: 14px;
+  font-size: .8rem; line-height: 1.45;
+}
+.quota-banner strong { color: var(--danger); display: block; margin-bottom: 4px; }
+.quota-pill {
+  font-size: .62rem; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+  white-space: nowrap; display: inline-block; margin-left: 6px;
+  background: var(--border); color: var(--muted); border: 1px solid transparent;
+}
+.quota-pill.is-low  { background: rgba(251,191,36,.14); color: var(--warning); border-color: rgba(251,191,36,.28); }
+.quota-pill.is-none { background: rgba(248,113,113,.14); color: var(--danger);  border-color: rgba(248,113,113,.28); }
+.quota-hint { display: block; font-size: .68rem; color: var(--muted); margin-top: 2px; }
+.quota-hint.is-over { color: var(--danger); font-weight: 600; }
+.day-emp-type option:disabled { color: var(--muted); }
+
 /* ── BIRTHDAYS ──────────────────────────────────────────────── */
 .birthday-corner {
   position: absolute; bottom: 1px; right: 1px;

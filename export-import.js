@@ -317,6 +317,9 @@ function generateICS() {
 
 // ── IMPORT ────────────────────────────────────────────────────
 let importFileData = null, importFileType = null, importParsedDays = [];
+// Días detectados por FILA de la tabla de asociación (índice del bucle, no el sid:
+// sanitizeId puede colisionar entre dos nombres distintos y dos filas pelearían por el mismo id)
+let importNameDates = {};
 
 function openImportModal() {
   resetImport();
@@ -361,7 +364,8 @@ function clearImportedDays() {
 }
 
 function resetImport() {
-  importFileData = null; importFileType = null; importParsedDays = [];
+  importFileData = null; importFileType = null; importParsedDays = []; importNameDates = {};
+  hideImportQuotaError();
   const fi = document.getElementById('import-file'); if (fi) fi.value = '';
   const dfn = document.getElementById('dz-filename'); if (dfn) dfn.textContent = '';
   const btn = document.getElementById('import-analyze-btn'); if (btn) btn.disabled = true;
@@ -500,15 +504,22 @@ function sanitizeHTML(str) {
 }
 
 function showImportPreview(parsed) {
+  hideImportQuotaError();
   const uniqueNames = [...new Set(parsed.map(p => p.empleado))];
+  importNameDates = {};
   const matchDiv = document.getElementById('import-emp-matching');
   matchDiv.innerHTML = `<div class="import-preview" style="max-height:none;margin-bottom:10px;">
     <div class="ip-title">Asociar nombres detectados con empleados</div>
-    ${uniqueNames.map(name => {
+    ${uniqueNames.map((name, i) => {
       const best = findBestMatch(name); const sid = sanitizeId(name);
+      // Días de ESTE nombre (varias entradas pueden repetir el mismo empleado detectado)
+      importNameDates[i] = [...new Set(parsed.filter(p => p.empleado === name).flatMap(p => p.dias || []))];
       return `<div class="import-emp-match">
         <div class="emp-dot-sm" id="match-dot-${sid}" style="background:${best?.color||'#888'}"></div>
-        <label><strong>${sanitizeHTML(name)}</strong></label>
+        <div style="flex:1">
+          <label><strong>${sanitizeHTML(name)}</strong></label>
+          <span class="quota-hint" id="quota-hint-${i}"></span>
+        </div>
         <select id="match-${sid}" onchange="updateMatchDot('${sid}')">
           <option value="">— Ignorar —</option>
           ${state.employees.map(e=>`<option value="${e.id}" ${best?.id==e.id?'selected':''}>${e.name}</option>`).join('')}
@@ -525,6 +536,8 @@ function showImportPreview(parsed) {
       const label=pts.length===3?`${parseInt(pts[2])} ${MONTHS[parseInt(pts[1])-1]} ${pts[0]}`:date;
       return `<div class="import-day-row"><span class="idr-date">${label}</span><span class="idr-emp">${sanitizeHTML(emp)}</span></div>`;
     }).join('');
+
+  refreshImportQuotaHints();
 }
 
 function sanitizeId(str){ return str.replace(/[^a-zA-Z0-9]/g,'_'); }
@@ -539,23 +552,113 @@ function updateMatchDot(sid) {
   const dot = document.getElementById('match-dot-'+sid);
   const emp = state.employees.find(e=>e.id===parseInt(sel.value));
   if (dot) dot.style.background = emp ? emp.color : '#555';
+  refreshImportQuotaHints();
+}
+
+// ── CUPO EN LA IMPORTACIÓN ────────────────────────────────────
+// Recorre las filas de asociación EXACTAMENTE como lo hace confirmImport,
+// para que lo validado sea idéntico a lo que se escribiría.
+function collectImportProposals() {
+  const seen = new Set(); const out = [];
+  importParsedDays.forEach(entry => {
+    const sel = document.getElementById('match-' + sanitizeId(entry.empleado));
+    if (!sel || !sel.value) return;                      // "— Ignorar —" o fila ausente
+    const empId = parseInt(sel.value, 10);
+    if (!Number.isFinite(empId)) return;
+    (entry.dias || []).forEach(dateStr => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return;  // descarta fechas basura
+      const k = empId + '|' + dateStr;
+      if (seen.has(k)) return;                            // mismo empleado/día repetido
+      seen.add(k);
+      out.push({ empId, date: dateStr });
+    });
+  });
+  return out;
+}
+
+function showImportQuotaError(violations) {
+  const box = document.getElementById('import-quota-error');
+  if (!box) return;
+  box.innerHTML = '';
+  const icon = document.createElement('span');
+  icon.textContent = '⚠️';
+  const body = document.createElement('div');
+  const title = document.createElement('strong');
+  title.textContent = 'No se puede importar: se supera el cupo de vacaciones';
+  body.appendChild(title);
+  // Los nombres de empleado llegan del documento: siempre con textContent, nunca innerHTML
+  vacQuotaLines(violations).forEach(line => {
+    const row = document.createElement('div');
+    row.textContent = line;
+    body.appendChild(row);
+  });
+  const foot = document.createElement('div');
+  foot.textContent = 'No se ha importado ningún día. Ajusta la asociación de nombres o el cupo de los empleados.';
+  body.appendChild(foot);
+  box.appendChild(icon); box.appendChild(body);
+  box.style.display = 'flex';
+}
+
+function hideImportQuotaError() {
+  const box = document.getElementById('import-quota-error');
+  if (!box) return;
+  box.innerHTML = '';
+  box.style.display = 'none';
+}
+
+function refreshImportQuotaHints() {
+  const proposals = collectImportProposals();
+  const violations = validateVacProposals(proposals);
+  const overIds = new Set(violations.map(v => v.empId));
+  const uniqueNames = [...new Set(importParsedDays.map(p => p.empleado))];
+
+  uniqueNames.forEach((name, i) => {
+    const hint = document.getElementById('quota-hint-' + i);
+    if (!hint) return;
+    const sel = document.getElementById('match-' + sanitizeId(name));
+    const empId = sel && sel.value ? parseInt(sel.value, 10) : NaN;
+    if (!Number.isFinite(empId)) {
+      hint.textContent = 'Se ignorará (no se importará ningún día)';
+      hint.classList.remove('is-over');
+      return;
+    }
+    // OJO: la pista usa los días de ESTE nombre pero las cifras de cupo del EMPLEADO.
+    // Si dos nombres detectados apuntan al mismo empleado, ambas filas muestran el mismo
+    // "cupo …" (es el del empleado) aunque cada una liste sus propios días; el exceso
+    // combinado sólo lo puede afirmar el aviso agregado de abajo.
+    const dates = importNameDates[i] || [];
+    const byYear = {};
+    dates.forEach(d => { const y = d.slice(0,4); byYear[y] = (byYear[y] || 0) + 1; });
+    const years = Object.keys(byYear).sort();
+    const n = dates.length;
+    if (years.length === 1) {
+      const y = years[0];
+      const q = getVacQuota(empId, y);
+      hint.textContent = `${n} ${plural(n,'día','días')} · cupo ${q.totalDays} en ${y} · ${q.used} ya ${plural(q.used,'marcado','marcados')} · ${plural(Math.max(0,q.left),'queda','quedan')} ${Math.max(0, q.left)}`;
+    } else if (years.length > 1) {
+      hint.textContent = `${n} ${plural(n,'día','días')} (${years.map(y=>`${y}: ${byYear[y]}`).join(' · ')}) — ver detalle abajo`;
+    } else {
+      hint.textContent = 'Sin días detectados';
+    }
+    hint.classList.toggle('is-over', overIds.has(empId));
+  });
+
+  if (violations.length) showImportQuotaError(violations); else hideImportQuotaError();
+  const btn = document.getElementById('import-confirm-btn');
+  if (btn) btn.disabled = violations.length > 0;
 }
 
 function confirmImport() {
-  let imported = 0;
-  importParsedDays.forEach(entry => {
-    const sid = sanitizeId(entry.empleado);
-    const sel = document.getElementById('match-'+sid);
-    if (!sel || !sel.value) return;
-    const empId = parseInt(sel.value);
-    (entry.dias||[]).forEach(dateStr => {
-      if (!state.marks[dateStr]) state.marks[dateStr] = {};
-      state.marks[dateStr][empId] = 'V';
-      imported++;
-    });
+  hideImportQuotaError();
+  const proposals = collectImportProposals();
+  const violations = validateVacProposals(proposals);
+  if (violations.length) { showImportQuotaError(violations); return; }   // no se importa NADA
+  proposals.forEach(({empId, date}) => {
+    if (!state.marks[date]) state.marks[date] = {};
+    state.marks[date][empId] = 'V';
   });
   saveState(); closeModal('import-modal');
-  showToast(`✅ ${imported} días importados al calendario`);
+  showToast(`✅ ${proposals.length} días importados al calendario`);
   showView('annual');
 }
 
