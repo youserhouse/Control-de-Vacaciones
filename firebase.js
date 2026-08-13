@@ -229,6 +229,7 @@ function mergeRemoteState(remote) {
   if (remote.conflictThresholdTotal) state.conflictThresholdTotal = remote.conflictThresholdTotal;
   if (remote.customRoles) state.customRoles = remote.customRoles;
   if (typeof remote.wtAllowVacationAssign === 'boolean') state.wtAllowVacationAssign = remote.wtAllowVacationAssign;
+  if (typeof remote.allowOtroSinCupo === 'boolean') state.allowOtroSinCupo = remote.allowOtroSinCupo;
   if (remote.compatibleRoles) {
     try {
       state.compatibleRoles = typeof remote.compatibleRoles === 'string'
