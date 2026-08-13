@@ -8,10 +8,16 @@ A static PWA (no build step, no bundler, no package.json) for managing employee 
 
 ## Commands
 
-There is no build, lint, or test tooling in this repo — it's hand-written HTML/CSS/JS loaded directly by the browser. To work on it:
+There is no build or lint tooling in this repo — it's hand-written HTML/CSS/JS loaded directly by the browser. To work on it:
 
 - **Run locally**: serve the directory with any static file server (e.g. `npx serve .` or `python3 -m http.server`) and open `splash.html` or `login.html`. Opening `index.html` directly via `file://` will not work correctly because Firebase Auth/Firestore and the Service Worker require an http(s) origin.
-- **Verify changes**: there's no automated test suite. Validate by loading the app in a browser and exercising the relevant view (dashboard / annual / monthly / gantt).
+- **Run the tests**: `node --test "tests/*.test.mjs"` — no dependencies, no package.json, just Node's built-in runner. Quote the glob; `node --test tests/` tries to resolve the directory as a module and fails.
+- **Verify changes**: the suite in `tests/` covers pure logic only (vacation quota, targeted saves, day signatures). Anything involving the DOM, Firestore round-trips or auth still has to be validated by loading the app in a browser and exercising the relevant view (dashboard / annual / monthly / gantt).
+
+### Test harness (`tests/harness.mjs`)
+The app's files are loose browser scripts that assume `window`/`document`/`localStorage` and talk to each other through globals, so they can't be `import`ed. `loadApp(files, extraGlobals)` runs them inside a `node:vm` context with those globals stubbed and returns `{ ctx, evaluate }`; `evaluate('someFn')` reaches top-level `let`/`const` bindings that never land on the global object. Tests therefore exercise **the real repo files**, not copies — copying the functions into the test would keep passing after someone broke the app.
+
+Two gotchas: arrays and objects created inside the vm have that context's prototypes, so `assert.deepEqual` (strict) fails against host literals — compare lengths/fields instead; and `firebase.js` runs `initializeApp` at load, so loading it needs a `firebase` stub plus `diagMsg`/`showSync`/`hideSync` (see `firebaseFalso()` in `tests/guardado-dirigido.test.mjs`, which also captures the exact `update()` arguments).
 - **Force-refresh clients after deploy**: bump `CACHE_NAME` in `sw.js` whenever any cached asset (`ASSETS` array) changes — the Service Worker is Network-First but won't evict its old cache otherwise, which can leave production clients on stale HTML/CSS/JS combinations (this has caused real layout bugs before).
 
 ## Architecture
