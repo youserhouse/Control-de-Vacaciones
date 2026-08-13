@@ -36,7 +36,13 @@ A single global `state` object is the source of truth for the whole app, persist
 - `conflictThreshold` / `conflictThresholdTotal`: thresholds used by `getConflictDays()` (in `calendar.js`) to flag days where too many people of the same/incompatible role, or too many people overall, are off simultaneously.
 - `currentYear`, `theme` (`dark` | `light` | `mecafilter`), `selectedColor`, `activeFilters`.
 
-Every mutation goes through `saveState()`, which writes to `localStorage` and then calls `window.saveToFirebase()` (defined in `firebase.js`) to push the whole state document up to Firestore. There's no granular/per-field sync — every save replaces the entire `vacaciones/estado` document.
+Every mutation goes through `saveState()`, which writes to `localStorage` and then pushes to Firestore. By default that means `window.saveToFirebase()` (in `firebase.js`), which replaces the **entire** `vacaciones/estado` document — so a save made from a stale local copy silently overwrites anyone else's concurrent change, anywhere in the state.
+
+`saveState(paths)` takes an optional list of changed field paths (e.g. `[['marks','2026-05-10'], ['festivos','2026-05-10']]`) and routes to `window.savePathsToFirebase()` instead, which issues a Firestore `update()` touching only those fields. A path whose value no longer exists locally is sent as `FieldValue.delete()` rather than written as null, and the whole thing falls back to the full `set()` if `update()` fails (it does when the document doesn't exist yet, e.g. an empty database). Prefer the targeted form wherever the caller knows what changed; calling `saveState()` with no arguments keeps the old whole-document behaviour and is still correct, just coarser.
+
+Currently only `saveDayMarks()` (`calendar.js`) uses the targeted form. The bulk paths — employee deletion (`employees.js`) and the import/clear routines (`export-import.js`) — still rewrite everything, which is acceptable because they're rare and admin-only.
+
+Targeted writes narrow the blast radius but don't make concurrent edits to the *same* field safe. The day modal is built once when it opens while `onSnapshot` keeps mutating `state` underneath, so `saveDayMarks()` guards separately: `daySignature(key)` (marks + festivo, key-sorted because Firestore doesn't preserve insertion order) is captured in `openDayModal()` and re-checked before saving. If it changed, the modal reloads with fresh data and the save is aborted rather than overwriting. Any new UI that edits a day over a long-lived modal needs the same guard.
 
 ### Sync model (`firebase.js`)
 - One Firestore document: `db.collection('vacaciones').doc('estado')` holds the entire serialized state (with `selectedColor`/`activeFilters` stripped as they're UI-only, and `compatibleRoles` JSON-stringified for storage).

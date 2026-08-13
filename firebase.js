@@ -168,6 +168,56 @@ window.saveToFirebase = async function() {
   }
 };
 
+// ── GUARDADO DIRIGIDO ─────────────────────────────────────────
+// saveToFirebase() reemplaza el documento ENTERO, así que un guardado hecho
+// sobre una copia local desfasada pisa cualquier cambio ajeno de cualquier
+// parte del estado. Esto escribe solo los campos indicados, de modo que dos
+// personas editando cosas distintas ya no se pisan.
+//
+// `paths` es una lista de rutas de campo, p.ej. [['marks','2026-05-10']].
+// Un campo que ya no existe en el estado local se borra en remoto en vez de
+// escribirse como nulo.
+function valueAtPath(path) {
+  let cur = window.state;
+  for (const seg of path) {
+    if (cur === null || typeof cur !== 'object' || !(seg in cur)) return undefined;
+    cur = cur[seg];
+  }
+  return cur;
+}
+
+window.savePathsToFirebase = async function(paths) {
+  if (!window.currentUser) {
+    diagMsg('⚠️ Sin sesión — no se guarda', '#f5a623');
+    return;
+  }
+  // Sin rutas no sabemos qué cambió: guardado completo, como siempre.
+  if (!Array.isArray(paths) || !paths.length) return window.saveToFirebase();
+  try {
+    showSync('Guardando...');
+    const args = [];
+    for (const path of paths) {
+      const val = valueAtPath(path);
+      args.push(new firebase.firestore.FieldPath(...path));
+      args.push(val === undefined
+        ? firebase.firestore.FieldValue.delete()
+        : JSON.parse(JSON.stringify(val)));
+    }
+    await DOC_REF.update(...args);
+    diagMsg('✅ Guardado en Firebase', '#4ade80');
+    setTimeout(hideSync, 1200);
+    setTimeout(() => {
+      const d = document.getElementById('firebase-diag');
+      if (d) d.style.display = 'none';
+    }, 3000);
+  } catch(e) {
+    // update() falla si el documento aún no existe (base de datos vacía).
+    // set() sí lo crea, así que ese caso cae al guardado completo.
+    console.warn('Guardado dirigido no disponible, se guarda entero:', e.message);
+    return window.saveToFirebase();
+  }
+};
+
 function mergeRemoteState(remote) {
   if (!remote) return;
   isSyncing = true;
