@@ -1,0 +1,53 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Lista blanca de acceso: config/access.emails.
+    // El correo del token se normaliza a minúsculas antes de comparar; los
+    // correos guardados en config/access.emails ya están todos en minúsculas
+    // (verificado en producción el 2026-08-13), así que normalizar solo puede
+    // dejar entrar a alguien que hoy quedaría fuera por diferencia de mayúsculas,
+    // nunca al revés.
+    function isAuthorized() {
+      return request.auth != null
+        && request.auth.token.email is string
+        && request.auth.token.email.lower() in
+           get(/databases/$(database)/documents/config/access).data.emails;
+    }
+
+    // Estado completo de la app (empleados, marcas, festivos, ajustes).
+    match /vacaciones/estado {
+      allow read, write: if isAuthorized();
+    }
+
+    // Rotación semanal de tareas y bajas. Una entrada por semana (weekKey).
+    // Sin estas reglas quedaban denegadas por defecto: la sección
+    // "Tareas Semanales" no podía guardar nada.
+    match /rotacionSemanal/{weekKey} {
+      allow read, write: if isAuthorized();
+    }
+
+    match /bajas/{weekKey} {
+      allow read, write: if isAuthorized();
+    }
+
+    // Lista blanca. Legible por cualquier usuario autenticado porque
+    // login.html la consulta ANTES de saber si el usuario está autorizado
+    // (si exigiera isAuthorized() el chequeo sería circular).
+    // Nunca escribible desde el cliente: se edita a mano en la consola.
+    match /config/access {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Claves privadas que la app pueda necesitar (loadSecret()).
+    // Solo lectura: el cliente nunca escribe aquí.
+    match /config/secrets {
+      allow read: if isAuthorized();
+      allow write: if false;
+    }
+
+    // Cualquier otra ruta queda denegada por defecto (Firestore deniega todo
+    // lo que ninguna regla permita explícitamente).
+  }
+}

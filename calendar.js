@@ -494,8 +494,20 @@ function renderMonthly() {
 // ── DAY MODAL ─────────────────────────────────────────────────
 let currentDayKey=null;
 
+// Huella del estado guardado de un día (marcas + festivo). Sirve para detectar
+// que alguien lo ha cambiado desde otro dispositivo mientras teníamos el modal
+// abierto: el modal se construye una sola vez al abrirlo, pero onSnapshot sigue
+// actualizando `state` por debajo, así que guardar a ciegas borraría su cambio.
+// Las claves van ordenadas porque Firestore no conserva el orden de inserción.
+function daySignature(key){
+  const m=getDayMarks(key);
+  return Object.keys(m).sort().map(id=>id+':'+m[id]).join(',')+'|'+(isFestivo(key)?'F':'');
+}
+let _dayStateAtOpen=null;
+
 function openDayModal(key) {
   currentDayKey=key;
+  _dayStateAtOpen=daySignature(key);
   hideDayQuotaError(); // que no quede un aviso de cupo de un intento anterior
   const marks=getDayMarks(key), festivo=isFestivo(key);
   const p=key.split('-');
@@ -568,6 +580,14 @@ function onDayTypeChange(empId) {
 
 function saveDayMarks() {
   hideDayQuotaError();
+  // Si este día cambió en otro dispositivo mientras el modal estaba abierto,
+  // no lo pisamos: se recarga el modal con lo que hay ahora y se rehace el
+  // cambio sobre datos frescos. Mismo patrón que el aborto por cupo.
+  if(_dayStateAtOpen!==null && daySignature(currentDayKey)!==_dayStateAtOpen){
+    openDayModal(currentDayKey);
+    showToast('⚠️ Otra persona cambió este día. Revisa y vuelve a guardar');
+    return;
+  }
   const isUser = window.isAdmin === false;
   let marks;
   if(isUser){
@@ -607,7 +627,11 @@ function saveDayMarks() {
   }
   if(Object.keys(marks).length) state.marks[currentDayKey]=marks;
   else delete state.marks[currentDayKey];
-  saveState();
+  // Guardado dirigido: solo este día. Un usuario limitado no toca festivos,
+  // así que su ruta no se incluye y no puede pisarla sin querer.
+  const paths=[['marks',currentDayKey]];
+  if(!isUser) paths.push(['festivos',currentDayKey]);
+  saveState(paths);
   closeModal('day-modal');
   showToast('✅ Guardado');
   const idx=[...document.querySelectorAll('.tab-btn')].findIndex(b=>b.classList.contains('active'));

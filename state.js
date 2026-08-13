@@ -78,12 +78,17 @@ function migrateFestivoEmployee(parsed) {
   parsed.employees = parsed.employees.filter(e => e.id !== festEmp.id);
 }
 
-function saveState() {
+// `paths` (opcional) son las rutas de campo que han cambiado, p.ej.
+// [['marks','2026-05-10']]. Si se indican, solo se escriben esos campos en
+// Firestore en vez del documento entero, y así dos personas editando cosas
+// distintas no se pisan. Sin `paths` el comportamiento es el de siempre.
+function saveState(paths) {
   window.state = state;
   localStorage.setItem('vac-app-v3', JSON.stringify(state));
   const d = document.getElementById('firebase-diag');
   if (d) d.style.display = 'block';
-  if (window.saveToFirebase) window.saveToFirebase();
+  if (paths && paths.length && window.savePathsToFirebase) window.savePathsToFirebase(paths);
+  else if (window.saveToFirebase) window.saveToFirebase();
 }
 
 window.state = state;
