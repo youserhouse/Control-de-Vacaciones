@@ -1,0 +1,69 @@
+{
+  "projectId": "ed0f49a3-5961-47c8-9fe2-b7793660f651",
+  "type": "frontend",
+  "name": "Humo: entrar y recorrer las vistas SIN guardar",
+  "description": "Comprueba que la app carga, que el login funciona y que las cuatro vistas se pintan. NO escribe nada: la app apunta a la base de datos de produccion con datos reales de empleados, asi que ningun paso debe pulsar Guardar.",
+  "priority": "p1",
+  "planSteps": [
+    {
+      "type": "action",
+      "description": "IMPORTANTE - RESTRICCION QUE APLICA A TODOS LOS PASOS: esta aplicacion esta conectada a una base de datos de produccion con datos reales de empleados. Esta PROHIBIDO pulsar cualquier boton que guarde, cree, modifique o borre datos: 'Guardar', 'Anadir', 'Eliminar', 'Confirmar', 'Importar'. Tampoco se deben marcar ni desmarcar casillas de empleados. Si un paso parece requerir guardar, no lo hagas y da el paso por fallido. Solo se permite navegar, mirar y cerrar ventanas con 'Cancelar' o la X."
+    },
+    {
+      "type": "action",
+      "description": "Abrir https://youserhouse.github.io/Vacaciones/login.html e iniciar sesion con el correo y la contrasena configurados en el entorno del proyecto."
+    },
+    {
+      "type": "assertion",
+      "description": "Tras iniciar sesion, la pagina principal (index.html) carga y se ve la barra lateral de navegacion. No debe aparecer ningun mensaje de error de Firebase ni de permisos."
+    },
+    {
+      "type": "action",
+      "description": "Si aparece la ventana de bienvenida con el saludo personal, cerrarla con su boton de cerrar. No pulsar ningun otro boton dentro de ella."
+    },
+    {
+      "type": "assertion",
+      "description": "La vista de Resumen muestra las tarjetas de datos y la lista del equipo con al menos un empleado. Los numeros no deben aparecer como 'NaN' ni vacios."
+    },
+    {
+      "type": "action",
+      "description": "Navegar a la vista Anual usando el menu lateral."
+    },
+    {
+      "type": "assertion",
+      "description": "La vista Anual pinta la rejilla de los 12 meses del ano y se ven dias marcados con color."
+    },
+    {
+      "type": "action",
+      "description": "Navegar a la vista Mensual usando el menu lateral."
+    },
+    {
+      "type": "assertion",
+      "description": "La vista Mensual pinta el calendario de un mes con sus dias numerados."
+    },
+    {
+      "type": "action",
+      "description": "Navegar a la vista Gantt usando el menu lateral."
+    },
+    {
+      "type": "assertion",
+      "description": "La vista Gantt pinta una fila por empleado con el nombre visible a la izquierda."
+    },
+    {
+      "type": "action",
+      "description": "Volver a la vista Mensual y pulsar sobre un dia cualquiera del calendario para abrir la ventana de detalle del dia."
+    },
+    {
+      "type": "assertion",
+      "description": "La ventana del dia se abre, muestra la fecha en su titulo y lista los empleados con sus casillas. Anotar si las casillas reflejan el estado guardado, pero NO tocarlas."
+    },
+    {
+      "type": "action",
+      "description": "Cerrar la ventana del dia pulsando 'Cancelar'. No pulsar 'Guardar' bajo ninguna circunstancia."
+    },
+    {
+      "type": "assertion",
+      "description": "La ventana se ha cerrado y el calendario sigue viendose igual que antes de abrirla, sin cambios."
+    }
+  ]
+}
