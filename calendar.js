@@ -525,9 +525,14 @@ function openDayModal(key) {
     const q=getVacQuota(emp.id,year);
     const wasV=marked==='V';
     const canV=wasV||q.left>0;   // ¿se puede seleccionar 'Vacaciones' en esta fila?
-    // Sin cupo, el tipo por defecto pasa a 'Otros' (marcar la fila no debe fallar)
+    // Sin cupo y sin marca previa, el único tipo que cabría es 'Otros' — pero
+    // eso solo se ofrece si el interruptor de Configuración lo permite. Por
+    // defecto (allowOtroSinCupo=false) la fila se bloquea entera: antes,
+    // quedarse sin cupo caía en 'Otros' automáticamente y la fila seguía
+    // marcable igual, que es justo lo que no se quería.
+    const quotaLocked = !marked && q.left<=0 && !state.allowOtroSinCupo;
     const type=marked||(canV?'V':'O');
-    const editable=canEdit(emp.id);
+    const editable=canEdit(emp.id) && !quotaLocked;
     const ro=editable?'':'disabled';
     const rowClick=editable?` onclick="toggleDayRow(${emp.id})"`:'';
     const chkClick=editable?`onclick="event.stopPropagation();toggleDayRow(${emp.id})"`:'onclick="event.stopPropagation()"';
@@ -535,7 +540,9 @@ function openDayModal(key) {
     const pillCls=(q.used>q.totalDays||q.left<=0)?' is-none':(q.left<=2?' is-low':'');
     const pillTxt=q.used>q.totalDays?`cupo excedido (+${q.used-q.totalDays})`
       :(q.left<=0?'sin cupo':`cupo ${q.left}/${q.totalDays}`);
-    const pillTitle=`Cupo anual ${year}: ${q.totalDays} días · ${q.used} marcados · ${Math.max(0,q.left)} disponibles`;
+    const pillTitle=quotaLocked
+      ? `Sin cupo de vacaciones. Activa "Permitir 'Otros' sin cupo" en Configuración para poder marcar este día.`
+      : `Cupo anual ${year}: ${q.totalDays} días · ${q.used} marcados · ${Math.max(0,q.left)} disponibles`;
     return `<div class="day-emp-row ${marked?'selected':''}" id="row-${emp.id}"${rowClick} style="${editable?'':'opacity:.55'}">
       <input type="checkbox" id="chk-${emp.id}" ${marked?'checked':''} ${ro} ${chkClick}>
       <div class="emp-dot-sm" style="background:${emp.color}"></div>

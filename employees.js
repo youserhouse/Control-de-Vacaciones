@@ -143,6 +143,8 @@ function openSettings() {
   const sel2 = document.getElementById('thresh-total');
   if (sel1) sel1.value = String(t);
   if (sel2) sel2.value = String(tt);
+  const chkOtro = document.getElementById('chk-allow-otro-sin-cupo');
+  if (chkOtro) chkOtro.checked = !!state.allowOtroSinCupo;
   renderCompatPairs();
   renderCustomRolesList();
   openModal('settings-modal');
@@ -153,6 +155,8 @@ function saveSettings() {
   const sel2 = document.getElementById('thresh-total');
   if (sel1) state.conflictThreshold = parseInt(sel1.value);
   if (sel2) state.conflictThresholdTotal = parseInt(sel2.value);
+  const chkOtro = document.getElementById('chk-allow-otro-sin-cupo');
+  if (chkOtro) state.allowOtroSinCupo = chkOtro.checked;
 
   const pairs = state.compatibleRoles || [];
   pairs.forEach((_, i) => {
