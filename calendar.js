@@ -54,6 +54,35 @@ function renderConflictBanner(containerId, year) {
   el.innerHTML = `<div class="conflict-banner">⚠️ <strong>${conflicts.length} día${conflicts.length>1?'s':''} con conflicto</strong> — Coinciden: ${names.join(', ')}</div>`;
 }
 
+// Aviso de cupo dentro del modal de día. Se pinta con textContent (las líneas
+// llevan nombres de empleados: nunca deben poder inyectar HTML).
+function showDayQuotaError(violations) {
+  const el = document.getElementById('day-quota-banner');
+  if (!el) return;
+  el.innerHTML = '';
+  const icon = document.createElement('span');
+  icon.textContent = '⚠️';
+  const box = document.createElement('div');
+  const title = document.createElement('strong');
+  title.textContent = 'No se puede guardar: cupo de vacaciones superado';
+  box.appendChild(title);
+  vacQuotaLines(violations).forEach(line => {
+    const d = document.createElement('div');
+    d.textContent = line;
+    box.appendChild(d);
+  });
+  el.appendChild(icon);
+  el.appendChild(box);
+  el.style.display = 'flex';
+}
+
+function hideDayQuotaError() {
+  const el = document.getElementById('day-quota-banner');
+  if (!el) return;
+  el.innerHTML = '';
+  el.style.display = 'none';
+}
+
 // ── DASHBOARD ─────────────────────────────────────────────────
 let _dashSearchQuery = '';
 
@@ -467,6 +496,7 @@ let currentDayKey=null;
 
 function openDayModal(key) {
   currentDayKey=key;
+  hideDayQuotaError(); // que no quede un aviso de cupo de un intento anterior
   const marks=getDayMarks(key), festivo=isFestivo(key);
   const p=key.split('-');
   document.getElementById('day-modal-title').textContent=`📅 ${parseInt(p[2])} de ${MONTHS[parseInt(p[1])-1]} ${p[0]}`;
@@ -477,18 +507,30 @@ function openDayModal(key) {
   document.getElementById('festivo-toggle').style.display = (window.isAdmin === false) ? 'none' : '';
   // Un usuario limitado solo puede editar SU propia fila; ve las demás en solo lectura.
   const canEdit = (empId) => window.isAdmin !== false || (window.currentEmployee && window.currentEmployee.id === empId);
+  const year=key.slice(0,4);
   document.getElementById('day-modal-emps').innerHTML=state.employees.map(emp=>{
-    const marked=marks[emp.id], type=marked||'V';
+    const marked=marks[emp.id];
+    const q=getVacQuota(emp.id,year);
+    const wasV=marked==='V';
+    const canV=wasV||q.left>0;   // ¿se puede seleccionar 'Vacaciones' en esta fila?
+    // Sin cupo, el tipo por defecto pasa a 'Otros' (marcar la fila no debe fallar)
+    const type=marked||(canV?'V':'O');
     const editable=canEdit(emp.id);
     const ro=editable?'':'disabled';
     const rowClick=editable?` onclick="toggleDayRow(${emp.id})"`:'';
     const chkClick=editable?`onclick="event.stopPropagation();toggleDayRow(${emp.id})"`:'onclick="event.stopPropagation()"';
+    // Píldora de cupo: excedido (datos heredados) / sin cupo / quedan pocos / normal
+    const pillCls=(q.used>q.totalDays||q.left<=0)?' is-none':(q.left<=2?' is-low':'');
+    const pillTxt=q.used>q.totalDays?`cupo excedido (+${q.used-q.totalDays})`
+      :(q.left<=0?'sin cupo':`cupo ${q.left}/${q.totalDays}`);
+    const pillTitle=`Cupo anual ${year}: ${q.totalDays} días · ${q.used} marcados · ${Math.max(0,q.left)} disponibles`;
     return `<div class="day-emp-row ${marked?'selected':''}" id="row-${emp.id}"${rowClick} style="${editable?'':'opacity:.55'}">
       <input type="checkbox" id="chk-${emp.id}" ${marked?'checked':''} ${ro} ${chkClick}>
       <div class="emp-dot-sm" style="background:${emp.color}"></div>
       <span style="font-size:.83rem;font-weight:600">${emp.name}</span>
-      <select class="day-emp-type" id="type-${emp.id}" ${ro} onclick="event.stopPropagation()">
-        <option value="V" ${type==='V'?'selected':''}>Vacaciones</option>
+      <span class="quota-pill${pillCls}" title="${pillTitle}">${pillTxt}</span>
+      <select class="day-emp-type" id="type-${emp.id}" ${ro} onclick="event.stopPropagation()" onchange="onDayTypeChange(${emp.id})">
+        <option value="V" ${type==='V'?'selected':''} ${canV?'':'disabled'}>Vacaciones</option>
         <option value="O" ${type==='O'?'selected':''}>Otros</option>
       </select>
     </div>`;
@@ -504,17 +546,29 @@ function toggleFestivo() {
 
 function toggleDayRow(empId) {
   const chk=document.getElementById('chk-'+empId), row=document.getElementById('row-'+empId);
-  chk.checked=!chk.checked;
+  const typeEl=document.getElementById('type-'+empId);
+  const willCheck=!chk.checked;
+  // Red de seguridad: no dejar marcar 'V' sin cupo (no se cambia el tipo por su cuenta)
+  if(willCheck&&typeEl&&typeEl.value==='V'&&!canMarkVacation(empId,currentDayKey)){
+    showToast('⚠️ Sin cupo de vacaciones: elige "Otros" o libera días');
+    return;   // no marca nada
+  }
+  chk.checked=willCheck;
   row.classList.toggle('selected',chk.checked);
 }
 
-function saveDayMarks() {
-  const isUser = window.isAdmin === false;
-  // El festivo solo lo cambia un administrador
-  if(!isUser){
-    if(document.getElementById('chk-festivo').checked) state.festivos[currentDayKey]=true;
-    else delete state.festivos[currentDayKey];
+// El desplegable ya trae 'Vacaciones' deshabilitado sin cupo; esto cubre el resto de casos
+function onDayTypeChange(empId) {
+  const sel=document.getElementById('type-'+empId);
+  if(sel&&sel.value==='V'&&!canMarkVacation(empId,currentDayKey)){
+    sel.value='O';
+    showToast('⚠️ Sin cupo de vacaciones disponible este año');
   }
+}
+
+function saveDayMarks() {
+  hideDayQuotaError();
+  const isUser = window.isAdmin === false;
   let marks;
   if(isUser){
     // Usuario limitado: parte de las marcas existentes y toca SOLO su fila —
@@ -534,6 +588,22 @@ function saveDayMarks() {
       const typeEl=document.getElementById('type-'+emp.id);
       if(chk&&chk.checked&&typeEl) marks[emp.id]=typeEl.value;
     });
+  }
+  // ── Tope anual: nadie (tampoco un admin) puede superar su cupo de vacaciones ──
+  const proposals = Object.entries(marks)
+    .filter(([, type]) => type === 'V')
+    .map(([id]) => ({ empId: Number(id), date: currentDayKey }));
+  const violations = validateVacProposals(proposals);
+  if (violations.length) {
+    showDayQuotaError(violations);
+    showToast('⚠️ No se guardó: se supera el cupo de vacaciones');
+    return;   // aborta TODO el guardado; el modal sigue abierto
+  }
+  // El festivo solo lo cambia un administrador (después del control de cupo:
+  // un guardado abortado no debe dejar nada tocado en memoria)
+  if(!isUser){
+    if(document.getElementById('chk-festivo').checked) state.festivos[currentDayKey]=true;
+    else delete state.festivos[currentDayKey];
   }
   if(Object.keys(marks).length) state.marks[currentDayKey]=marks;
   else delete state.marks[currentDayKey];
