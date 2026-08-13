@@ -30,6 +30,11 @@ function loadState() {
       if (!p.customRoles) p.customRoles = [];
       if (!p.compatibleRoles) p.compatibleRoles = [['Encargado','Piker']];
       if (typeof p.wtAllowVacationAssign !== 'boolean') p.wtAllowVacationAssign = false;
+      // Por defecto NO se puede marcar 'Otros' cuando a alguien no le queda cupo
+      // de vacaciones — antes de este interruptor, sin cupo se ofrecía 'Otros'
+      // como alternativa automática, lo que en la práctica dejaba marcar el día
+      // igual. Un administrador lo reactiva desde Configuración si lo necesita.
+      if (typeof p.allowOtroSinCupo !== 'boolean') p.allowOtroSinCupo = false;
       p.employees.forEach(e => { if (!e.birthday) e.birthday = ''; });
       p.employees.forEach(e => { if (!e.email) e.email = ''; }); // vínculo correo↔empleado (perfiles por usuario)
       p.employees.forEach(e => { if (e.participatesInRotation === undefined) e.participatesInRotation = false; });
@@ -58,6 +63,7 @@ function loadState() {
     customRoles: [],
     compatibleRoles: [['Encargado','Piker']],
     wtAllowVacationAssign: false,
+    allowOtroSinCupo: false,
   };
 }
 
